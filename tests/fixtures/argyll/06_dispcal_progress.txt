@@ -1,0 +1,60 @@
+# Fixture: dispcal 校准进度输出
+# 来源: 手写，基于 ArgyllCMS dispcal 校准过程输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: dispcal -v -d 1 -c 1 -q m -t 6500 -g 2.2 output
+
+# ========== 启动阶段 ==========
+ArgyllCMS dispcal - Display calibration utility
+Version 2.2.1
+
+Display 1: 'LCD Monitor' at 1920x1080
+Instrument: 'i1 Display Pro' at port 1
+Using spectral sample file: /path/to/ArgyllCMS/ref/i1d3ss.ccss
+
+# ========== 仪器初始化 ==========
+Setting up instrument ...
+Serial Number: XXXXXXXX
+Initial calibration ...
+
+# ========== 用户放置探头提示 ==========
+Place instrument on test window.
+Hit Esc or Q to abort, any other key to continue:
+
+# ========== 校准开始 ==========
+Commencing display calibration ...
+Reading patch 1 of 21 ...
+
+# ========== 进度输出 ==========
+# 格式: "patch X of Y" 表示进度
+# dispcal 通常测量灰阶和关键色块
+
+Reading patch 2 of 21 ...
+Reading patch 3 of 21 ...
+...
+Reading patch 10 of 21 ...
+Reading patch 11 of 21 ...
+
+# ========== 计算阶段 ==========
+Computing calibration curves ...
+Creating VCGT (Video Card Gamma Table) ...
+
+# ========== Web Server 模式输出 ==========
+# 如果使用 -dweb:9292 参数:
+Created web server at 'http://192.168.1.20:9292/', now waiting for browser to connect
+
+# ========== 预期解析结果 ==========
+# 进度解析正则: r'patch\s+(\d+)\s+of\s+(\d+)'
+# 提取: current_patch = match.group(1), total_patches = match.group(2)
+# 进度计算: 15 + int(55 * current_patch / total_patches) -> 15-70%
+
+# 关键阶段检测:
+# - "Commencing display calibration" -> 开始校准 (15%)
+# - "patch X of Y" -> 测量色块 (15-70%)
+# - "Computing calibration curves" -> 计算曲线 (70%)
+# - "Creating VCGT" -> 创建 VCGT (80%)
+# - "Written" + ".cal" -> 完成 (100%)
+
+# ========== Web Server 模式检测 ==========
+# 正则: r"'(http://[^']+)'"
+# 提取 URL，用于前端显示或客户端连接
+# 触发 on_web_server_url 回调

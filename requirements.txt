@@ -1,0 +1,14 @@
+PyQt6>=6.5.0
+PyQt6-WebEngine>=6.5.0
+numpy>=1.24.0
+
+# PDF 报告导出（P4: 已启用；未安装时程序优雅降级，提示安装）
+# macOS 上还需系统级 Pango 库：brew install pango
+weasyprint>=60.0
+
+# macOS 平台专用：用于访问 NSColorSpace 和 AppKit
+# 仅在 macOS 系统上需要
+# pyobjc-core 是基础，必须首先安装
+pyobjc-core>=9.0; sys_platform == 'darwin'
+pyobjc-framework-Cocoa>=9.0; sys_platform == 'darwin'
+pyobjc-framework-Quartz>=9.0; sys_platform == 'darwin'

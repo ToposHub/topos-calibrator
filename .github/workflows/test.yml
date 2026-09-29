@@ -1,0 +1,311 @@
+# Topos Calibrator CI 测试工作流
+#
+# 测试分层：
+#   - unit: 不依赖 GUI/硬件/打包的快速单元测试
+#   - workflow: fake adapter 下跑 workflow 测试
+#   - integration: 可依赖 Argyll fake 或本机工具的集成测试
+#   - package: 依赖 dist app 的打包测试（不在 CI 运行）
+#   - hardware: 真实设备手动/实验室执行测试（不在 CI 运行）
+#
+# CI 第一阶段：unit + workflow + source smoke（快速，无硬件/GUI）
+#
+# 执行条件：
+# - Push 到 main/master 分支
+# - Pull Request 到 main/master 分支
+# - 手动触发
+
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      run_integration_tests:
+        description: 'Run integration tests (requires ArgyllCMS)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # ========== 第一阶段：单元测试 + Workflow 测试 ==========
+  unit-tests:
+    name: Unit & Workflow Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install pytest pytest-cov pytest-timeout pytest-qt
+          pip install PyQt6 PyQt6-WebEngine
+
+      - name: Run source smoke test
+        run: |
+          python3 scripts/source_smoke_test.py
+
+      - name: Run unit and workflow tests
+        run: |
+          pytest -v \
+            -m "unit or workflow" \
+            --tb=short \
+            --timeout=60 \
+            --timeout-method=thread \
+            tests/
+        continue-on-error: false
+
+      - name: Generate coverage report
+        if: success()
+        run: |
+          pytest --cov=src --cov-report=xml --cov-report=term-missing \
+            -m "unit or workflow" \
+            --timeout=60 \
+            tests/
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          flags: unit
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  # ========== macOS 测试 ==========
+  test-macos:
+    name: Test on macOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: unit-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install pytest pytest-cov pytest-timeout pytest-qt
+          pip install PyQt6 PyQt6-WebEngine
+          pip install pyobjc-core pyobjc-framework-Cocoa pyobjc-framework-Quartz
+
+      - name: Run source smoke test
+        run: |
+          python3 scripts/source_smoke_test.py
+
+      - name: Run pytest (unit + workflow, exclude hardware/package)
+        run: |
+          pytest -v \
+            -m "not hardware and not package" \
+            --tb=short \
+            --timeout=120 \
+            --timeout-method=thread \
+            tests/
+        continue-on-error: false
+
+  # ========== Windows 测试 ==========
+  test-windows:
+    name: Test on Windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+    needs: unit-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install pytest pytest-cov pytest-timeout pytest-qt
+          pip install PyQt6 PyQt6-WebEngine
+
+      - name: Run source smoke test
+        shell: pwsh
+        run: |
+          python3 scripts/source_smoke_test.py
+
+      - name: Run pytest (unit + workflow, exclude hardware/package)
+        shell: pwsh
+        run: |
+          pytest -v `
+            -m "not hardware and not package" `
+            --tb=short `
+            --timeout=120 `
+            --timeout-method=thread `
+            tests/
+        continue-on-error: false
+
+  # ========== 集成测试（可选，需要手动触发）==========
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: unit-tests
+    if: ${{ github.event.inputs.run_integration_tests == 'true' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install pytest pytest-cov pytest-timeout pytest-qt
+          pip install PyQt6 PyQt6-WebEngine
+
+      - name: Install ArgyllCMS (fake/simulated)
+        run: |
+          echo "ArgyllCMS integration tests use mock fixtures"
+          # 真实 ArgyllCMS 测试需要自托管 runner
+
+      - name: Run integration tests
+        run: |
+          pytest -v \
+            -m "integration" \
+            --tb=short \
+            --timeout=180 \
+            --timeout-method=thread \
+            tests/
+        continue-on-error: true
+
+  # ========== 代码质量检查 ==========
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: |
+          pip install ruff mypy
+
+      - name: Run Ruff (linter)
+        run: |
+          ruff check src/ tests/ --output-format=github
+        continue-on-error: true
+
+      - name: Run Ruff (formatter check)
+        run: |
+          ruff format --check src/ tests/
+        continue-on-error: true
+
+      - name: Run MyPy (type checker)
+        run: |
+          mypy src/ --ignore-missing-imports --no-error-summary
+        continue-on-error: true
+
+  # ========== 测试结果汇总 ==========
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, test-macos, test-windows, lint]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.unit-tests.result }}" == "success" ]]; then
+            echo "- Unit & Workflow Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Unit & Workflow Tests: FAILED or SKIPPED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.test-macos.result }}" == "success" ]]; then
+            echo "- macOS Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- macOS Tests: FAILED or SKIPPED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.test-windows.result }}" == "success" ]]; then
+            echo "- Windows Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Windows Tests: FAILED or SKIPPED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.lint.result }}" == "success" ]]; then
+            echo "- Code Quality: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Code Quality: FAILED or SKIPPED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All unit and workflow tests should pass without GUI or hardware requirements." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Markers" >> $GITHUB_STEP_SUMMARY
+          echo "- \`unit\`: Fast tests without GUI/hardware/package dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- \`workflow\`: Workflow tests with fake adapters" >> $GITHUB_STEP_SUMMARY
+          echo "- \`integration\`: Tests requiring ArgyllCMS or local tools" >> $GITHUB_STEP_SUMMARY
+          echo "- \`package\`: Tests requiring built dist app (manual)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`hardware\`: Tests requiring physical instruments (manual)" >> $GITHUB_STEP_SUMMARY

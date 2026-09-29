@@ -1,0 +1,20 @@
+# Topos Calibrator 打包工具依赖
+# 这些依赖仅在打包时需要，不属于应用程序运行依赖
+
+# PyInstaller - 主要打包工具
+pyinstaller>=6.0.0
+
+# 由 scripts/generate_app_icons.py 生成 macOS/Windows 图标资源
+Pillow>=10.0.0
+
+# macOS 特定工具（可选）
+# py2app>=0.28  # 替代方案，PyInstaller 更通用
+
+# Windows 特定工具（可选）
+# 需要安装 NSIS: https://nsis.sourceforge.io/
+
+# Linux 特定工具（可选）
+# 需要安装 linuxdeploy: https://github.com/linuxdeploy/linuxdeploy
+
+# 测试打包结果
+pytest>=8.0.0

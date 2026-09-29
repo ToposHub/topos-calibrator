@@ -1,0 +1,92 @@
+{
+  "description": "sRGB/XYZ/Lab 转换验证向量",
+  "source": "Bruce Lindbloom (http://www.brucelindbloom.com)",
+  "white_point": "D65",
+  "test_vectors": [
+    {
+      "name": "纯红 (255, 0, 0)",
+      "rgb": [255, 0, 0],
+      "xyz": [41.24, 21.26, 1.93],
+      "lab": [53.23, 80.11, 67.22],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "纯绿 (0, 255, 0)",
+      "rgb": [0, 255, 0],
+      "xyz": [35.76, 71.52, 11.92],
+      "lab": [87.74, -86.18, 83.18],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "纯蓝 (0, 0, 255)",
+      "rgb": [0, 0, 255],
+      "xyz": [18.05, 7.22, 95.05],
+      "lab": [32.30, 79.20, -107.86],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "白色 (255, 255, 255)",
+      "rgb": [255, 255, 255],
+      "xyz": [95.05, 100.00, 108.90],
+      "lab": [100.00, 0.00, 0.00],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "黑色 (0, 0, 0)",
+      "rgb": [0, 0, 0],
+      "xyz": [0.00, 0.00, 0.00],
+      "lab": [0.00, 0.00, 0.00],
+      "tolerance_xyz": 0.01,
+      "tolerance_lab": 0.01
+    },
+    {
+      "name": "灰色 (128, 128, 128)",
+      "rgb": [128, 128, 128],
+      "xyz": [20.52, 21.59, 23.50],
+      "lab": [53.59, 0.00, 0.00],
+      "tolerance_xyz": 0.5,
+      "tolerance_lab": 0.5
+    },
+    {
+      "name": "黄色 (255, 255, 0)",
+      "rgb": [255, 255, 0],
+      "xyz": [77.00, 92.78, 13.85],
+      "lab": [97.14, -21.55, 94.48],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "青色 (0, 255, 255)",
+      "rgb": [0, 255, 255],
+      "xyz": [53.81, 78.74, 106.97],
+      "lab": [91.11, -48.09, -14.13],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "紫色 (255, 0, 255)",
+      "rgb": [255, 0, 255],
+      "xyz": [59.29, 28.48, 96.98],
+      "lab": [60.32, 98.24, -60.83],
+      "tolerance_xyz": 0.1,
+      "tolerance_lab": 0.1
+    },
+    {
+      "name": "中灰 (165, 165, 165)",
+      "rgb": [165, 165, 165],
+      "xyz": [35.76, 37.63, 40.97],
+      "lab": [67.70, 0.00, 0.00],
+      "tolerance_xyz": 0.5,
+      "tolerance_lab": 0.5
+    }
+  ],
+  "roundtrip_test": {
+    "description": "RGB -> Lab -> RGB roundtrip 测试",
+    "max_delta_e": 0.5,
+    "max_rgb_diff": 2
+  }
+}

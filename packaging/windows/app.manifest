@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Topos Calibrator Windows Application Manifest
+
+此文件定义 Windows 应用程序的元数据和行为配置。
+嵌入到可执行文件中，影响 Windows 如何处理应用程序。
+
+参考文档:
+https://docs.microsoft.com/en-us/windows/win32/sbscs/application-manifests
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" 
+          manifestVersion="1.0" 
+          xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+    
+    <!-- ========== 应用标识 ========== -->
+    <assemblyIdentity
+        type="win32"
+        name="ToposCalibrator"
+        version="0.1.0.0"
+        processorArchitecture="*"
+        publicKeyToken=""
+    />
+    
+    <description>Topos Calibrator - Professional Display Calibration Software</description>
+    
+    <!-- ========== 兼容性配置 ========== -->
+    <!-- 告知 Windows 应用支持的系统版本 -->
+    <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+        <application>
+            <!-- Windows 10 / Windows 11 -->
+            <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+            <!-- Windows 8.1 -->
+            <supportedOS Id="{1f6b9b5d-93c1-4d8c-9e8d-57c6b9b5d93c}"/>
+            <!-- Windows 8 -->
+            <supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69c4d1a9c4e}"/>
+            <!-- Windows 7 -->
+            <supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/>
+        </application>
+    </compatibility>
+    
+    <!-- ========== 执行级别 ========== -->
+    <!-- 
+    asInvoker: 以调用者权限运行（推荐）
+    requireAdministrator: 需要管理员权限
+    highestAvailable: 使用可用的最高权限
+    
+    注意: 显卡 LUT 操作可能需要管理员权限，
+    但我们建议用户手动授权而不是强制要求。
+    -->
+    <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+        <security>
+            <requestedPrivileges>
+                <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+            </requestedPrivileges>
+        </security>
+    </trustInfo>
+    
+    <!-- ========== DPI 感知配置 ========== -->
+    <!-- 支持高 DPI 显示器 -->
+    <asmv3:application>
+        <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">
+            <!-- DPI 感知: Per Monitor DPI Aware V2 -->
+            <dpiAware>true</dpiAware>
+            <!-- 长路径支持 -->
+            <longPathAware>true</longPathAware>
+        </asmv3:windowsSettings>
+        
+        <!-- Windows 10+ DPI 设置 -->
+        <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
+            <!-- Per Monitor DPI Aware V2 -->
+            <dpiAwareness>PerMonitorV2, PerMonitor</dpiAwareness>
+        </asmv3:windowsSettings>
+        
+        <!-- Windows 10 1703+ 设置 -->
+        <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2017/WindowsSettings">
+            <!-- GDI 缩放 -->
+            <gdiScaling>false</gdiScaling>
+        </asmv3:windowsSettings>
+    </asmv3:application>
+    
+    <!-- ========== 依赖项配置 ========== -->
+    <!-- 
+    系统组件依赖。
+    PyInstaller 打包的应用通常不依赖特定系统组件，
+    但这里声明常见依赖以确保兼容性。
+    -->
+    <dependency>
+        <dependentAssembly>
+            <assemblyIdentity
+                type="win32"
+                name="Microsoft.Windows.Common-Controls"
+                version="6.0.0.0"
+                processorArchitecture="*"
+                publicKeyToken="6595b64144ccf1df"
+                language="*"
+            />
+        </dependentAssembly>
+    </dependency>
+    
+    <!-- ========== 文件关联 ========== -->
+    <!-- 注意：文件关联需要通过安装器注册，这里只是声明 -->
+    
+    <!-- ========== 禁用虚拟化 ========== -->
+    <!-- 
+    禁用 UAC 文件和注册表虚拟化，
+    确保应用行为一致。
+    -->
+    <asmv3:application>
+        <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2011/WindowsSettings">
+            <!-- 禁用文件虚拟化 -->
+            <disableWindowFiltering>true</disableWindowFiltering>
+        </asmv3:windowsSettings>
+    </asmv3:application>
+    
+</assembly>

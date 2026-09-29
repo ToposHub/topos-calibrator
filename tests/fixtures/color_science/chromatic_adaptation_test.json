@@ -1,0 +1,61 @@
+{
+  "description": "Chromatic Adaptation 测试向量",
+  "source": "Bruce Lindbloom (http://www.brucelindbloom.com)",
+  "test_cases": [
+    {
+      "name": "D50 到 D65 Bradford 适配",
+      "method": "bradford",
+      "source_white": "D50",
+      "target_white": "D65",
+      "test_color_xyz": [96.422, 100.0, 82.521],
+      "expected_xyz": [95.047, 100.0, 108.883],
+      "tolerance": 0.1,
+      "note": "D50 白点适配到 D65 应得到 D65 白点"
+    },
+    {
+      "name": "D65 到 D50 Bradford 适配",
+      "method": "bradford",
+      "source_white": "D65",
+      "target_white": "D50",
+      "test_color_xyz": [95.047, 100.0, 108.883],
+      "expected_xyz": [96.422, 100.0, 82.521],
+      "tolerance": 0.1
+    },
+    {
+      "name": "纯红 D50 到 D65",
+      "method": "bradford",
+      "source_white": "D50",
+      "target_white": "D65",
+      "test_color_lab": [53.23, 80.11, 67.22],
+      "expected_lab": [53.2, 80.0, 67.0],
+      "tolerance_lab": 0.5,
+      "note": "近似值，精确计算需要验证"
+    },
+    {
+      "name": "D65 到 A Bradford 适配",
+      "method": "bradford",
+      "source_white": "D65",
+      "target_white": "A",
+      "test_color_xyz": [95.047, 100.0, 108.883],
+      "expected_xyz": [109.850, 100.0, 35.585],
+      "tolerance": 0.1
+    },
+    {
+      "name": "D50 到 D65 CAT02 适配",
+      "method": "cat02",
+      "source_white": "D50",
+      "target_white": "D65",
+      "test_color_xyz": [96.422, 100.0, 82.521],
+      "expected_xyz": [95.047, 100.0, 108.883],
+      "tolerance": 0.5,
+      "note": "CAT02 与 Bradford 结果略有差异"
+    }
+  ],
+  "identity_test": {
+    "description": "相同白点适配应返回相同值",
+    "test_cases": [
+      {"source": "D65", "target": "D65", "xyz": [50.0, 60.0, 70.0]},
+      {"source": "D50", "target": "D50", "xyz": [30.0, 40.0, 50.0]}
+    ]
+  }
+}

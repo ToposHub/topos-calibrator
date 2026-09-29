@@ -1,0 +1,46 @@
+# Fixture: spotread USB 设备断开输出
+# 来源: 手写，基于 ArgyllCMS spotread USB 断开实际输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -e -d l -c 1
+
+# ========== 正常启动后，USB 断开 ==========
+# 用户测量过程中意外拔出探头
+
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+Setting up instrument ...
+Found instrument 'hid:111 (i1 Display Pro, ColorMunki Display)'
+Serial Number: XXXXXXXX
+Place instrument on measurement area ...
+Hit any key to continue:
+
+# ========== 测量开始，USB 突然断开 ==========
+# 用户发送换行符触发测量
+# 但探头被意外拔出
+
+# ========== USB 断开错误输出 ==========
+# 这是关键的 USB 断开错误，需要立即检测并处理
+
+readpipeasync failed: (-1) LIBUSB_ERROR_IO
+
+# 或者另一种常见格式:
+USB read error (-1) LIBUSB_ERROR_IO
+
+# ========== 预期解析结果 ==========
+# 错误关键词检测:
+# - "readpipeasync failed" -> USB 断开
+# - "LIBUSB_ERROR_IO" -> USB I/O 错误
+# - 应触发 USB_DISCONNECT_KEYWORDS 匹配
+# - 应触发自动断开连接流程
+
+# ========== 错误处理建议 ==========
+# 1. 立即设置 _hardware_error_event
+# 2. 设置 _is_connected = False
+# 3. 通知用户 "USB 设备已断开"
+# 4. 提供重连选项
+
+# ========== 关键检测点 ==========
+# - "readpipeasync failed" 是 USB 断开的典型错误
+# - LIBUSB_ERROR_IO 表示 USB 端点读取失败
+# - 需要立即终止测量循环，避免刷屏

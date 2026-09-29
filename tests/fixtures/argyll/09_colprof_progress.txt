@@ -1,0 +1,55 @@
+# Fixture: colprof 生成 ICC Profile 进度输出
+# 来源: 手写，基于 ArgyllCMS colprof 输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: colprof -v -qm -D "Display Profile" -al -yc output
+
+# ========== 启动阶段 ==========
+ArgyllCMS colprof - Profile generator
+Version 2.2.1
+
+Reading measurement data from 'output.ti3' ...
+Loaded 1024 measurement points
+
+# ========== 计算阶段 ==========
+# colprof 是计算密集型过程，耗时较长
+
+Building forward lookup tables ...
+Progress: 5%
+Progress: 10%
+Progress: 15%
+...
+Progress: 30%
+
+Computing inverse lookup tables ...
+Progress: 35%
+Progress: 40%
+...
+Progress: 70%
+
+# ========== ICC 表创建 ==========
+Creating A2B0 table (Device to PCS) ...
+Progress: 75%
+Creating B2A0 table (PCS to Device) ...
+Progress: 80%
+
+Smoothing curves ...
+Progress: 85%
+Progress: 90%
+
+# ========== 写入阶段 ==========
+Writing ICC profile ...
+Progress: 95%
+Progress: 100%
+
+# ========== 预期解析结果 ==========
+# 进度检测正则:
+# - r'(?:(?:Progress|Done)[:\s]+)?(\d+)%'
+# 提取: progress_pct = match.group(1)
+
+# 阶段检测（估算进度）:
+# - "Reading measurement data" -> 5%
+# - "Building forward lookup" -> 5-30%
+# - "Computing inverse lookup" -> 30-70%
+# - "Creating A2B0/B2A0 table" -> 70-90%
+# - "Smoothing curves" -> 85-90%
+# - "Writing ICC profile" -> 95-100%

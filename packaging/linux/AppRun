@@ -1,0 +1,125 @@
+#!/bin/bash
+# Topos Calibrator AppImage 启动脚本
+# ================================
+#
+# 此脚本作为 AppImage 的入口点，处理：
+# - 环境变量设置
+# - Qt 平台选择（X11/Wayland）
+# - ArgyllCMS 路径检测
+# - 权限检查
+
+# ========== 环境变量 ==========
+
+# Qt 平台选择
+# 优先使用 X11，因为 Wayland 对色块窗口有特殊限制
+if [ -z "$QT_QPA_PLATFORM" ]; then
+    # 检测是否有 X11
+    if [ -n "$DISPLAY" ]; then
+        export QT_QPA_PLATFORM=xcb
+    elif [ -n "$WAYLAND_DISPLAY" ]; then
+        export QT_QPA_PLATFORM=wayland
+        echo "警告: Wayland 环境下色块窗口可能受限"
+        echo "建议使用 X11 或 XWayland 环境"
+    else
+        echo "错误: 未检测到显示环境 (X11/Wayland)"
+        exit 1
+    fi
+fi
+
+# WebEngine 环境变量
+export QTWEBENGINE_REMOTE_DEBUGGING=9222
+export QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu-sandbox"
+
+# ========== 路径设置 ==========
+
+# AppImage 挂载点
+APPDIR="${APPDIR:-$(dirname "$(readlink -f "$0")")}"
+
+# ArgyllCMS 路径
+# 1. 内置路径
+ARGYLL_INTERNAL="$APPDIR/usr/bin/ArgyllCMS/bin"
+# 2. 系统路径
+ARGYLL_SYSTEM="/usr/bin:/usr/local/bin"
+# 3. 用户路径
+ARGYLL_USER="$HOME/.local/bin:$HOME/bin"
+
+# 检测 ArgyllCMS
+detect_argyll() {
+    # 检查内置
+    if [ -d "$ARGYLL_INTERNAL" ] && [ -f "$ARGYLL_INTERNAL/spotread" ]; then
+        export ARGYLLCMS_PATH="$ARGYLL_INTERNAL"
+        return 0
+    fi
+    
+    # 检查系统 PATH
+    for dir in $(echo "$ARGYLL_SYSTEM:$ARGYLL_USER" | tr ':' ' '); do
+        if [ -f "$dir/spotread" ]; then
+            export ARGYLLCMS_PATH="$dir"
+            return 0
+        fi
+    done
+    
+    # 未找到
+    return 1
+}
+
+# ========== 权限检查 ==========
+
+check_permissions() {
+    ISSUES=0
+    
+    # 检查 i2c 设备权限 (DDC/CI)
+    if [ -d "/dev/i2c-*" ] 2>/dev/null; then
+        # 检查是否有读写权限
+        for dev in /dev/i2c-*; do
+            if [ ! -r "$dev" ] || [ ! -w "$dev" ]; then
+                ISSUES=$((ISSUES + 1))
+                echo "警告: 无权限访问 $dev (DDC/CI)"
+                echo "解决: sudo chmod 666 $dev"
+            fi
+        done
+    fi
+    
+    # 检查 USB HID 设备权限
+    for dev in /dev/usb/hid* /dev/hidraw*; do
+        if [ -e "$dev" ] && [ ! -r "$dev" ]; then
+            ISSUES=$((ISSUES + 1))
+            echo "警告: 无权限访问 $dev (校色仪)"
+        fi
+    done
+    
+    return $ISSUES
+}
+
+# ========== 主程序 ==========
+
+# 检测 ArgyllCMS
+if ! detect_argyll; then
+    echo "======================================================"
+    echo " ArgyllCMS 未找到"
+    echo "======================================================"
+    echo ""
+    echo "Topos Calibrator 需要 ArgyllCMS 进行色彩测量。"
+    echo ""
+    echo "安装方式："
+    echo ""
+    echo "Debian/Ubuntu:"
+    echo "  sudo apt install argyll"
+    echo ""
+    echo "Fedora:"
+    echo "  sudo dnf install argyllcms"
+    echo ""
+    echo "Arch Linux:"
+    echo "  sudo pacman -S argyllcms"
+    echo ""
+    echo "或从官网下载:"
+    echo "  https://www.argyllcms.com/"
+    echo ""
+    echo "======================================================"
+fi
+
+# 检查权限
+check_permissions
+
+# 运行主程序
+exec "$APPDIR/usr/bin/topos-calibrator" "$@"

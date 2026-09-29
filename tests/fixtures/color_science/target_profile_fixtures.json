@@ -1,0 +1,306 @@
+{
+  "description": "TargetProfile Golden Fixtures - 每个色彩空间的参考值",
+  "source": "CIE/ITU/SMPTE 标准文档 + Bruce Lindbloom",
+  "version": "1.0",
+
+  "white_points": {
+    "D65": {
+      "xy": [0.31271, 0.32902],
+      "xyz": [95.047, 100.000, 108.883],
+      "cct_approx": 6500,
+      "description": "sRGB/Rec.709/Rec.2020 标准白点"
+    },
+    "D50": {
+      "xy": [0.34567, 0.35850],
+      "xyz": [96.422, 100.000, 82.521],
+      "cct_approx": 5000,
+      "description": "印刷/摄影标准白点"
+    },
+    "D60": {
+      "xy": [0.32168, 0.33767],
+      "xyz": [95.026, 100.000, 100.874],
+      "cct_approx": 6000,
+      "description": "DCI-P3 影院白点"
+    },
+    "DCI": {
+      "xy": [0.3140, 0.3510],
+      "xyz": [89.459, 100.000, 95.442],
+      "cct_approx": 6300,
+      "description": "DCI-P3 影院白点"
+    }
+  },
+
+  "color_spaces": {
+    "sRGB": {
+      "primaries": {
+        "red": [0.6400, 0.3300],
+        "green": [0.3000, 0.6000],
+        "blue": [0.1500, 0.0600]
+      },
+      "white_point": "D65",
+      "transfer_function": "sRGB",
+      "category": "sdr",
+      "description": "IEC 61966-2-1 sRGB"
+    },
+    "Rec709": {
+      "primaries": {
+        "red": [0.6400, 0.3300],
+        "green": [0.3000, 0.6000],
+        "blue": [0.1500, 0.0600]
+      },
+      "white_point": "D65",
+      "transfer_function": "BT1886",
+      "category": "sdr",
+      "description": "BT.709 + BT.1886"
+    },
+    "DisplayP3": {
+      "primaries": {
+        "red": [0.6800, 0.3200],
+        "green": [0.2650, 0.6900],
+        "blue": [0.1500, 0.0600]
+      },
+      "white_point": "D65",
+      "transfer_function": "gamma22",
+      "category": "wide_gamut",
+      "description": "Apple Display P3"
+    },
+    "DCI_P3": {
+      "primaries": {
+        "red": [0.6800, 0.3200],
+        "green": [0.2650, 0.6900],
+        "blue": [0.1500, 0.0600]
+      },
+      "white_point": "DCI",
+      "transfer_function": "gamma26",
+      "category": "wide_gamut",
+      "description": "SMPTE RP 431-2 DCI-P3"
+    },
+    "AdobeRGB": {
+      "primaries": {
+        "red": [0.6400, 0.3300],
+        "green": [0.2100, 0.7100],
+        "blue": [0.1500, 0.0600]
+      },
+      "white_point": "D65",
+      "transfer_function": "gamma22",
+      "category": "wide_gamut",
+      "description": "Adobe RGB (1998)"
+    },
+    "Rec2020": {
+      "primaries": {
+        "red": [0.7080, 0.2920],
+        "green": [0.1700, 0.7970],
+        "blue": [0.1310, 0.0460]
+      },
+      "white_point": "D65",
+      "transfer_function": "BT1886",
+      "category": "wide_gamut",
+      "description": "BT.2020 UHD 标准"
+    }
+  },
+
+  "transfer_functions": {
+    "gamma22": {
+      "type": "gamma",
+      "gamma": 2.2,
+      "test_values": [
+        {"input": 0.0, "expected_L": 0.0, "tolerance": 0.0001},
+        {"input": 0.5, "expected_L": 0.217637, "tolerance": 0.0001},
+        {"input": 1.0, "expected_L": 1.0, "tolerance": 0.0001}
+      ],
+      "description": "纯 Gamma 2.2"
+    },
+    "gamma24": {
+      "type": "gamma",
+      "gamma": 2.4,
+      "test_values": [
+        {"input": 0.0, "expected_L": 0.0, "tolerance": 0.0001},
+        {"input": 0.5, "expected_L": 0.189465, "tolerance": 0.0001},
+        {"input": 1.0, "expected_L": 1.0, "tolerance": 0.0001}
+      ],
+      "description": "纯 Gamma 2.4 (BT.1886)"
+    },
+    "gamma26": {
+      "type": "gamma",
+      "gamma": 2.6,
+      "test_values": [
+        {"input": 0.0, "expected_L": 0.0, "tolerance": 0.0001},
+        {"input": 0.5, "expected_L": 0.164938, "tolerance": 0.001},
+        {"input": 1.0, "expected_L": 1.0, "tolerance": 0.0001}
+      ],
+      "description": "DCI-P3 Gamma 2.6"
+    },
+    "sRGB": {
+      "type": "piecewise",
+      "test_values": [
+        {"input": 0.0, "expected_L": 0.0, "tolerance": 0.0001},
+        {"input": 0.04045, "expected_L": 0.0031308, "tolerance": 0.0001},
+        {"input": 0.5, "expected_L": 0.214041, "tolerance": 0.002},
+        {"input": 1.0, "expected_L": 1.0, "tolerance": 0.0001}
+      ],
+      "description": "sRGB TRC (IEC 61966-2-1)"
+    },
+    "BT1886": {
+      "type": "gamma_with_black_lift",
+      "gamma": 2.4,
+      "default_Lw": 100.0,
+      "default_Lb": 0.0,
+      "test_values": [
+        {"input": 0.0, "Lw": 100.0, "Lb": 0.0, "expected_L": 0.0, "tolerance": 0.0001},
+        {"input": 0.5, "Lw": 100.0, "Lb": 0.0, "expected_L": 18.9465, "tolerance": 0.01},
+        {"input": 1.0, "Lw": 100.0, "Lb": 0.0, "expected_L": 100.0, "tolerance": 0.0001},
+        {"input": 0.0, "Lw": 100.0, "Lb": 0.5, "expected_L": 0.5, "tolerance": 0.0001},
+        {"input": 1.0, "Lw": 100.0, "Lb": 0.5, "expected_L": 100.0, "tolerance": 0.0001}
+      ],
+      "description": "ITU-R BT.1886"
+    },
+    "PQ": {
+      "type": "hdr",
+      "L_max_default": 10000.0,
+      "test_values": [
+        {"input": 0.0, "L_max": 10000, "expected_L": 0.0, "tolerance": 0.01},
+        {"input": 0.5, "L_max": 10000, "expected_L": 92.73, "tolerance": 0.5},
+        {"input": 1.0, "L_max": 10000, "expected_L": 10000.0, "tolerance": 1.0}
+      ],
+      "description": "SMPTE ST 2084 PQ"
+    },
+    "HLG": {
+      "type": "hdr_hybrid",
+      "Lw_default": 1000.0,
+      "test_values": [
+        {"input": 0.0, "Lw": 1000, "expected_L": 0.0, "tolerance": 0.01},
+        {"input": 0.25, "Lw": 1000, "expected_L": 9.6, "tolerance": 3.0},
+        {"input": 0.5, "Lw": 1000, "expected_L": 50.7, "tolerance": 5.0},
+        {"input": 0.75, "Lw": 1000, "expected_L": 203.2, "tolerance": 5.0},
+        {"input": 1.0, "Lw": 1000, "expected_L": 1000.0, "tolerance": 10.0}
+      ],
+      "description": "ITU-R BT.2100 HLG（注意：HLG实现差异较大，使用实测值作为参考）"
+    }
+  },
+
+  "delta_e_tests": {
+    "cie76": {
+      "description": "CIE Delta E 1976",
+      "test_pairs": [
+        {
+          "Lab1": [50.0, 0.0, 0.0],
+          "Lab2": [50.0, 10.0, 0.0],
+          "expected": 10.0,
+          "tolerance": 0.001
+        },
+        {
+          "Lab1": [50.0, 10.0, 20.0],
+          "Lab2": [60.0, 15.0, 25.0],
+          "expected": 12.247,
+          "tolerance": 0.01
+        }
+      ]
+    },
+    "cie94": {
+      "description": "CIE Delta E 1994",
+      "test_pairs": [
+        {
+          "Lab1": [50.0, 10.0, 10.0],
+          "Lab2": [50.0, 12.0, 12.0],
+          "expected_type": "positive",
+          "min_value": 0.1
+        }
+      ]
+    },
+    "ciede2000": {
+      "description": "CIEDE2000 (默认报告使用)",
+      "test_pairs": [
+        {
+          "Lab1": [50.0, 0.0, 0.0],
+          "Lab2": [50.0, 0.0, 0.0],
+          "expected": 0.0,
+          "tolerance": 0.0001,
+          "note": "相同颜色应 Delta E = 0"
+        },
+        {
+          "Lab1": [50.0, 2.6772, -79.7751],
+          "Lab2": [50.0, 0.0, -82.7485],
+          "expected": 2.0425,
+          "tolerance": 0.1,
+          "note": "Sharma 测试对 #1"
+        }
+      ]
+    }
+  },
+
+  "cct_duv_tests": {
+    "description": "CCT/Duv 计算验证",
+    "test_cases": [
+      {
+        "xy": [0.31271, 0.32902],
+        "expected_cct": 6500,
+        "cct_tolerance": 500,
+        "expected_duv_near_zero": true,
+        "duv_tolerance": 0.01,
+        "note": "D65"
+      },
+      {
+        "xy": [0.34567, 0.35850],
+        "expected_cct": 5000,
+        "cct_tolerance": 500,
+        "expected_duv_near_zero": true,
+        "duv_tolerance": 0.01,
+        "note": "D50"
+      }
+    ]
+  },
+
+  "rgb_to_xyz_roundtrip_tests": {
+    "description": "RGB -> XYZ -> RGB roundtrip 测试",
+    "color_space": "sRGB",
+    "test_colors": [
+      {"rgb_8bit": [255, 0, 0], "name": "Red"},
+      {"rgb_8bit": [0, 255, 0], "name": "Green"},
+      {"rgb_8bit": [0, 0, 255], "name": "Blue"},
+      {"rgb_8bit": [255, 255, 255], "name": "White"},
+      {"rgb_8bit": [0, 0, 0], "name": "Black"},
+      {"rgb_8bit": [128, 128, 128], "name": "Gray50"}
+    ],
+    "max_rgb_diff": 2,
+    "max_delta_e": 0.5
+  },
+
+  "profile_validation_tests": {
+    "description": "TargetProfile 有效性验证测试",
+    "valid_profiles": [
+      {"preset_name": "sRGB", "expected_valid": true},
+      {"preset_name": "Rec.709", "expected_valid": true},
+      {"preset_name": "Display P3", "expected_valid": true},
+      {"preset_name": "DCI-P3", "expected_valid": true},
+      {"preset_name": "Adobe RGB", "expected_valid": true},
+      {"preset_name": "Rec.2020", "expected_valid": true},
+      {"preset_name": "HDR PQ 1000", "expected_valid": true},
+      {"preset_name": "HDR HLG 1000", "expected_valid": true}
+    ],
+    "invalid_profiles": [
+      {
+        "name": "Invalid Color Space",
+        "color_space_name": "InvalidSpace",
+        "white_point_type": "D65",
+        "transfer_type": "sRGB",
+        "expected_errors": ["未知的色彩空间"]
+      },
+      {
+        "name": "Invalid Custom White Point",
+        "color_space_name": "sRGB",
+        "white_point_type": "custom",
+        "custom_white_xy": null,
+        "transfer_type": "sRGB",
+        "expected_errors": ["自定义白点需要指定"]
+      },
+      {
+        "name": "Invalid HDR Peak",
+        "color_space_name": "Rec2020",
+        "white_point_type": "D65",
+        "transfer_type": "PQ",
+        "peak_luminance": -100,
+        "expected_errors": ["peak luminance 必须 > 0"]
+      }
+    ]
+  }
+}

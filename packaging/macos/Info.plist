@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ========== 基本标识信息 ========== -->
+    <key>CFBundleIdentifier</key>
+    <string>com.toposcalibrator.app</string>
+    
+    <key>CFBundleName</key>
+    <string>Topos Calibrator</string>
+    
+    <key>CFBundleDisplayName</key>
+    <string>Topos Calibrator</string>
+    
+    <key>CFBundleExecutable</key>
+    <string>Topos Calibrator</string>
+    
+    <key>CFBundleIconFile</key>
+    <string>ToposCalibrator.icns</string>
+    
+    <key>CFBundleVersion</key>
+    <!-- Apple requires a numeric build version; the preview label is shown in-app. -->
+    <string>0.1.0</string>
+    
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+
+    <key>CFBundleGetInfoString</key>
+    <string>Topos Calibrator v0.1.0-preview</string>
+    
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    
+    <!-- ========== 最低系统版本 ========== -->
+    <key>LSMinimumSystemVersion</key>
+    <string>10.15.0</string>
+    
+    <!-- ========== 应用分类 ========== -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    
+    <!-- ========== 支持的文档类型 ========== -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Topos Calibrator Measurement</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.toposcalibrator.measurement</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>tcm</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>TI3 Measurement File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>ti3</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>ICC Profile</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>icc</string>
+                <string>icm</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- ========== 导出的 UTI ========== -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.toposcalibrator.measurement</string>
+            <key>UTTypeDescription</key>
+            <string>Topos Calibrator Measurement Data</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.json</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>tcm</string>
+                </array>
+                <key>public.mime-type</key>
+                <string>application/x-topos-calibrator-measurement</string>
+            </dict>
+        </dict>
+    </array>
+    
+    <!-- ========== 高 DPI 支持 ========== -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+    
+    <!-- ========== 硬件权限声明 ========== -->
+    <!-- 注意：实际的权限请求在代码中触发，这里只是声明 -->
+    
+    <!-- USB 设备访问 -->
+    <key>NSUSBDeviceUsageDescription</key>
+    <string>Topos Calibrator 需要访问 USB 设备以连接校色仪进行显示器测量。</string>
+    
+    <!-- 屏幕录制权限 (macOS 10.15+) -->
+    <!-- dispwin 需要此权限来显示色块 -->
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Topos Calibrator 需要屏幕录制权限来准确显示测量色块和操作显卡 LUT。</string>
+    
+    <!-- 辅助功能权限提示 (在 Info.plist 中声明以便 macOS 知道) -->
+    <!-- 实际辅助功能权限需要在运行时请求，这里只是说明 -->
+    
+    <!-- ========== 网络权限 ========== -->
+    <!-- WebEngine 可能需要本地网络访问 -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Topos Calibrator 使用本地网络端口进行内部通信。</string>
+    
+    <!-- ========== 沙盒配置 ========== -->
+    <!-- 如果需要签名和公证，需要启用沙盒 -->
+    <!-- 当前为非沙盒应用，可以访问更多系统资源 -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+    
+    <!-- ========== 智能卡访问 ========== -->
+    <!-- 可能用于许可证验证 -->
+    
+    <!-- ========== 后台运行 ========== -->
+    <key>LSUIElement</key>
+    <false/>
+    
+    <!-- ========== 多语言支持 ========== -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>zh_CN</string>
+        <string>en</string>
+    </array>
+    
+    <!-- ========== 版权信息 ========== -->
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2024 Topos Calibrator Team. MIT License.</string>
+    
+    <!-- ========== 帮助链接 ========== -->
+    <key>CFBundleHelpBookName</key>
+    <string>Topos Calibrator Help</string>
+    
+    <key>CFBundleHelpBookFolder</key>
+    <string>ToposCalibrator.help</string>
+    
+    <!-- ========== 更新支持 ========== -->
+    <key>SUFeedURL</key>
+    <string>https://toposcalibrator.com/updates/appcast.xml</string>
+    
+    <key>SUPublicEDKey</key>
+    <string></string> <!-- Sparkle 更新公钥，需要时填写 -->
+    
+</dict>
+</plist>

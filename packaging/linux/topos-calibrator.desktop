@@ -1,0 +1,52 @@
+[Desktop Entry]
+# Topos Calibrator Linux Desktop Entry
+# 符合 freedesktop.org Desktop Entry Specification
+
+Version=1.0
+Type=Application
+Name=Topos Calibrator
+GenericName=Display Calibration Software
+GenericName[zh_CN]=显示器校色软件
+Comment=Professional display calibration and color measurement tool
+Comment[zh_CN]=专业显示器校准与色彩测量工具
+
+# 执行命令
+Exec=topos-calibrator %F
+Icon=ToposCalibrator
+Terminal=false
+
+# 分类
+Categories=Graphics;Settings;HardwareSettings;
+Keywords=calibration;color;display;monitor;ICC;LUT;
+
+# 支持的文件类型
+MimeType=application/x-topos-calibrator-measurement;application/x-argyll-ti3;application/x-icc-profile;
+
+# 启动通知
+StartupNotify=true
+StartupWMClass=topos-calibrator
+
+# 窗口行为
+SingleMainWindow=true
+
+# X11/Wayland 兼容性
+X-GNOME-Autostart-enabled=true
+X-KDE-StartupNotify=true
+
+# 文件关联（自定义 MIME 类型）
+# 需要在系统中注册
+
+[Desktop Action Measure]
+Name=Quick Measure
+Name[zh_CN]=快速测量
+Exec=topos-calibrator --measure-mode
+
+[Desktop Action Calibrate]
+Name=Create ICC Profile
+Name[zh_CN]=创建 ICC Profile
+Exec=topos-calibrator --icc-mode
+
+[Desktop Action LUT]
+Name=Create 3D LUT
+Name[zh_CN]=创建 3D LUT
+Exec=topos-calibrator --lut-mode

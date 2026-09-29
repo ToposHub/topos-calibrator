@@ -1,0 +1,45 @@
+# Fixture: spotread 设备枚举输出
+# 来源: 手写，基于 ArgyllCMS spotread -D -c ? 设备列表输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -D -c ?
+
+# ========== 设备列表输出 ==========
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+# ========== 仪器端口列表 ==========
+# -c ? 参数会列出所有可用的仪器设备
+
+    1 = 'hid:111 (X-Rite i1 DisplayPro, ColorMunki Display)'
+    2 = 'hid:222 (Datacolor SpyderX)'
+    3 = 'serial:/dev/cu.usbserial-XXX (Unknown device)'
+
+# ========== 设备格式解析 ==========
+# 格式: "序号 = '端口标识: (设备名称)'"
+# 或者: "序号 = '端口路径'"
+
+# 预期解析正则: r"^\s*(\d+)\s*=\s*['\"]?([^'\"\n]+)['\"]?\s*$"
+# 提取: index = match.group(1), device_info = match.group(2)
+
+# ========== 设备信息提取 ==========
+# hid:111 -> HID 设备端口
+# (X-Rite i1 DisplayPro, ColorMunki Display) -> 设备名称
+# serial:/dev/cu.usbserial-XXX -> 串口设备
+
+# ========== probe_type 匹配逻辑 ==========
+# argyll_controller.py _match_probe_type():
+# - 'i1 display' / 'i1d3' -> ProbeType.I1_DISPLAY_PRO
+# - 'colormunki display' -> ProbeType.I1_DISPLAY_PRO
+# - 'spyderx' -> ProbeType.SPYDERX
+# - 'serial' / 未知设备 -> None
+
+# ========== 预期解析结果 ==========
+# enumerate_instruments() 返回:
+# [
+#   {'index': 1, 'port': 'hid', 'name': 'X-Rite i1 DisplayPro, ColorMunki Display',
+#    'probe_type': ProbeType.I1_DISPLAY_PRO},
+#   {'index': 2, 'port': 'hid', 'name': 'Datacolor SpyderX',
+#    'probe_type': ProbeType.SPYDERX},
+#   {'index': 3, 'port': 'serial', 'name': '/dev/cu.usbserial-XXX',
+#    'probe_type': None}
+# ]

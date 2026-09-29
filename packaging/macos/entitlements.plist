@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 
+    Topos Calibrator macOS 权限声明 (Entitlements)
+    
+    此文件定义应用需要的特殊权限。
+    签名时需要使用此文件。
+    
+    权限分类：
+    1. USB 设备访问 - 校色仪通信
+    2. 辅助功能 - DDC/CI 显示器控制（需要用户手动授权）
+    3. 硬件访问 - 显示器 LUT 操作
+    -->
+    
+    <!-- ========== USB 设备访问权限 ========== -->
+    <!-- 允许访问 USB 设备（校色仪） -->
+    <key>com.apple.security.device.usb</key>
+    <true/>
+    
+    <!-- 允许访问 HID 设备（部分校色仪使用 HID 协议） -->
+    <key>com.apple.security.device.camera</key>
+    <false/>
+    
+    <!-- ========== 硬件访问权限 ========== -->
+    <!-- 允许访问音频设备（部分校色仪可能被识别为音频设备） -->
+    <key>com.apple.security.device.audio-input</key>
+    <false/>
+    
+    <!-- 允许访问蓝牙设备（未来可能支持蓝牙校色仪） -->
+    <key>com.apple.security.device.bluetooth</key>
+    <false/>
+    
+    <!-- ========== 文件访问权限 ========== -->
+    <!-- 允许访问用户选择的文件 -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    
+    <!-- 允许访问下载目录 -->
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    
+    <!-- 允许访问图片目录（保存截图） -->
+    <key>com.apple.security.files.pictures.read-write</key>
+    <true/>
+    
+    <!-- 允许访问桌面 -->
+    <key>com.apple.security.files.desktop.read-write</key>
+    <true/>
+    
+    <!-- ========== 网络权限 ========== -->
+    <!-- 允许传入网络连接（本地调试端口） -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- 允许传出网络连接（未来可能用于更新检查） -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+    
+    <!-- ========== 进程权限 ========== -->
+    <!-- 允许执行子进程（ArgyllCMS 工具） -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    
+    <!-- 允许加载任意库（PyInstaller 打包需要） -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    
+    <!-- 允许执行子进程 -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    
+    <!-- ========== 辅助功能权限说明 ========== -->
+    <!-- 
+    注意：辅助功能权限 (com.apple.security.automation) 
+    不能通过 entitlements 文件预授权，必须由用户在
+    系统偏好设置 > 安全性与隐私 > 隐私 > 辅助功能 中手动授权。
+    
+    应用需要在启动时检查并提示用户授权。
+    
+    需要 AXIsProcessTrusted() API 检查权限状态。
+    -->
+    
+</dict>
+</plist>

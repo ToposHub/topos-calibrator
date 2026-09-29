@@ -1,0 +1,100 @@
+{
+  "description": "EOTF/OETF 传递函数测试向量",
+  "source": "IEC 61966-2-1, ITU-R BT.1886, SMPTE ST 2084, ITU-R BT.2100-2",
+  "test_vectors": [
+    {
+      "function": "gamma_2.2",
+      "description": "纯 Gamma 2.2",
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.001},
+        {"input_V": 0.1, "expected_L": 0.0063, "tolerance": 0.0001},
+        {"input_V": 0.25, "expected_L": 0.0474, "tolerance": 0.0001},
+        {"input_V": 0.5, "expected_L": 0.2176, "tolerance": 0.0001},
+        {"input_V": 0.75, "expected_L": 0.5310, "tolerance": 0.0001},
+        {"input_V": 1.0, "expected_L": 1.0, "tolerance": 0.001}
+      ]
+    },
+    {
+      "function": "gamma_2.4",
+      "description": "纯 Gamma 2.4（BT.1886 标准）",
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.001},
+        {"input_V": 0.1, "expected_L": 0.0039, "tolerance": 0.0001},
+        {"input_V": 0.25, "expected_L": 0.0359, "tolerance": 0.0001},
+        {"input_V": 0.5, "expected_L": 0.1895, "tolerance": 0.0001},
+        {"input_V": 0.75, "expected_L": 0.5014, "tolerance": 0.0001},
+        {"input_V": 1.0, "expected_L": 1.0, "tolerance": 0.001}
+      ]
+    },
+    {
+      "function": "srgb",
+      "description": "sRGB TRC (IEC 61966-2-1)",
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.001},
+        {"input_V": 0.04045, "expected_L": 0.00313, "tolerance": 0.00001},
+        {"input_V": 0.05, "expected_L": 0.00394, "tolerance": 0.0001},
+        {"input_V": 0.10, "expected_L": 0.01002, "tolerance": 0.0001},
+        {"input_V": 0.25, "expected_L": 0.05088, "tolerance": 0.0001},
+        {"input_V": 0.40, "expected_L": 0.1329, "tolerance": 0.0001},
+        {"input_V": 0.5, "expected_L": 0.21404, "tolerance": 0.0001},
+        {"input_V": 0.75, "expected_L": 0.52252, "tolerance": 0.0001},
+        {"input_V": 1.0, "expected_L": 1.0, "tolerance": 0.001}
+      ]
+    },
+    {
+      "function": "bt1886",
+      "description": "ITU-R BT.1886 (Lw=100, Lb=0.01)",
+      "parameters": {"Lw": 100.0, "Lb": 0.01},
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.01, "tolerance": 0.001},
+        {"input_V": 0.1, "expected_L": 0.41, "tolerance": 0.1},
+        {"input_V": 0.25, "expected_L": 3.60, "tolerance": 0.1},
+        {"input_V": 0.5, "expected_L": 18.95, "tolerance": 0.1},
+        {"input_V": 0.75, "expected_L": 50.14, "tolerance": 0.1},
+        {"input_V": 1.0, "expected_L": 100.0, "tolerance": 0.01}
+      ]
+    },
+    {
+      "function": "bt1886",
+      "description": "ITU-R BT.1886 (Lw=100, Lb=0)",
+      "parameters": {"Lw": 100.0, "Lb": 0.0},
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.001},
+        {"input_V": 0.1, "expected_L": 0.39, "tolerance": 0.01},
+        {"input_V": 0.5, "expected_L": 18.95, "tolerance": 0.1},
+        {"input_V": 1.0, "expected_L": 100.0, "tolerance": 0.01}
+      ]
+    },
+    {
+      "function": "pq",
+      "description": "SMPTE ST 2084 PQ (L_max=10000)",
+      "parameters": {"L_max": 10000.0},
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.01},
+        {"input_V": 0.01, "expected_L": 0.0023, "tolerance": 0.001},
+        {"input_V": 0.1, "expected_L": 0.32, "tolerance": 0.1},
+        {"input_V": 0.25, "expected_L": 5.15, "tolerance": 0.5},
+        {"input_V": 0.5, "expected_L": 92.25, "tolerance": 1.0},
+        {"input_V": 0.75, "expected_L": 983.38, "tolerance": 5.0},
+        {"input_V": 1.0, "expected_L": 10000.0, "tolerance": 1.0}
+      ]
+    },
+    {
+      "function": "hlg",
+      "description": "ITU-R BT.2100 HLG (Lw=1000, Lb=0)",
+      "parameters": {"Lw": 1000.0, "Lb": 0.0},
+      "tests": [
+        {"input_V": 0.0, "expected_L": 0.0, "tolerance": 0.1},
+        {"input_V": 0.25, "expected_L": 9.6, "tolerance": 1.0},
+        {"input_V": 0.38, "expected_L": 26.2, "tolerance": 1.0},
+        {"input_V": 0.5, "expected_L": 50.7, "tolerance": 5.0},
+        {"input_V": 0.75, "expected_L": 203.2, "tolerance": 10.0},
+        {"input_V": 1.0, "expected_L": 1000.0, "tolerance": 10.0}
+      ]
+    }
+  ],
+  "roundtrip_test": {
+    "description": "V -> L -> V roundtrip 测试",
+    "max_relative_error": 0.001
+  }
+}

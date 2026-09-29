@@ -1,0 +1,63 @@
+{
+  "description": "色域交集计算测试向量",
+  "test_cases": [
+    {
+      "name": "完全重叠（相同三角形）",
+      "triangle1": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "triangle2": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "expected_intersection_area": 0.1117,
+      "expected_coverage": 100.0,
+      "expected_area_ratio": 100.0,
+      "tolerance": 0.001
+    },
+    {
+      "name": "完全分离（无交集）",
+      "triangle1": [[0.20, 0.20], [0.25, 0.25], [0.15, 0.25]],
+      "triangle2": [[0.70, 0.70], [0.75, 0.75], [0.65, 0.75]],
+      "expected_intersection_area": 0.0,
+      "expected_coverage": 0.0,
+      "expected_area_ratio": 100.0,
+      "tolerance": 0.001
+    },
+    {
+      "name": "部分重叠（小三角形在大三角形内）",
+      "triangle1": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "triangle2": [[0.35, 0.40], [0.45, 0.45], [0.30, 0.50]],
+      "expected_intersection_area": "计算小三角形面积",
+      "expected_coverage": "小三角形面积 / 大三角形面积",
+      "expected_area_ratio": "小三角形面积 / 大三角形面积",
+      "note": "小三角形完全在大三角形内，交集面积等于小三角形面积"
+    },
+    {
+      "name": "sRGB 覆盖 Rec.2020（测量色域小于标准）",
+      "triangle1": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "triangle2": [[0.708, 0.292], [0.170, 0.797], [0.131, 0.046]],
+      "expected": "sRGB 面积约为 Rec.2020 面积的 70%",
+      "note": "sRGB primaries 是 Rec.2020 primaries 的子集"
+    },
+    {
+      "name": "Rec.2020 覆盖 sRGB（测量色域大于标准）",
+      "triangle1": [[0.708, 0.292], [0.170, 0.797], [0.131, 0.046]],
+      "triangle2": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "expected_coverage": 100.0,
+      "expected_area_ratio": 140.0,
+      "tolerance": 5.0,
+      "note": "Rec.2020 完全覆盖 sRGB，面积比约 140%"
+    },
+    {
+      "name": "半重叠（共享一个顶点）",
+      "triangle1": [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
+      "triangle2": [[0.64, 0.33], [0.40, 0.55], [0.25, 0.10]],
+      "expected": "需要精确计算交集面积",
+      "note": "两个三角形共享红色顶点"
+    }
+  ],
+  "standard_gamut_areas": {
+    "sRGB": 0.1117,
+    "Rec709": 0.1117,
+    "DisplayP3": 0.1267,
+    "Rec2020": 0.1596,
+    "AdobeRGB": 0.1382,
+    "note": "面积单位为 xy 平面上的绝对面积"
+  }
+}

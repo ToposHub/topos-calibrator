@@ -1,0 +1,2723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topos Calibrator - 显示器校正与测量</title>
+    <link rel="stylesheet" href="css/style.css?v=5">
+    <!-- ECharts - 本地文件 -->
+    <script src="js/echarts.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部菜单栏 -->
+        <header class="menu-bar">
+            <div class="menu-left">
+                <div class="menu-item">
+                    文件
+                    <div class="menu-dropdown">
+                        <div class="dropdown-item" id="menu-new-profile">新建配置</div>
+                        <div class="dropdown-item" id="menu-open-profile">打开配置...</div>
+                        <div class="dropdown-item" id="menu-save-profile">保存配置</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-export-csv">导出 CSV...</div>
+                        <div class="dropdown-item" id="menu-export-pdf">导出报告...</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-quit">退出</div>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    测量
+                    <div class="menu-dropdown">
+                        <div class="dropdown-item" id="menu-connect-probe">连接探头<span class="dropdown-shortcut">⌘K</span></div>
+                        <div class="dropdown-item disabled" id="menu-calibrate-probe">校准探头</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-measure-all">循环测量<span class="dropdown-shortcut">⌘M</span></div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item disabled" id="menu-stop">停止测量<span class="dropdown-shortcut">Esc</span></div>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    视图
+                    <div class="menu-dropdown">
+                        <div class="dropdown-item" id="menu-toggle-settings">显示设置面板</div>
+                        <div class="dropdown-item" id="menu-toggle-patch">显示色块预览</div>
+                        <div class="dropdown-item" id="menu-toggle-results">显示测量结果</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-open-patch-window">测量窗口</div>
+                        <div class="dropdown-item" id="menu-web-measurement-server"><span class="dropdown-check" id="web-server-check"></span>Web测量服务器</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-open-comparison">数据对比</div>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    设置
+                    <div class="menu-dropdown">
+                        <div class="dropdown-item" id="menu-advanced-mode"><span class="dropdown-check" id="advanced-mode-check"></span>高级模式</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-language-zh"><span class="dropdown-check" id="lang-check-zh">✓</span>简体中文</div>
+                        <div class="dropdown-item" id="menu-language-en"><span class="dropdown-check" id="lang-check-en"></span>English</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-preferences">偏好设置...</div>
+                        <div class="dropdown-item" id="menu-probe-config">探头配置...</div>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    帮助
+                    <div class="menu-dropdown">
+                        <div class="dropdown-item" id="menu-docs">使用文档</div>
+                        <div class="dropdown-item" id="menu-about">关于 Topos Calibrator</div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-right">
+                <button class="btn btn-secondary btn-sm prefs-gear-btn" id="btn-open-prefs" title="偏好设置">
+                    <span class="prefs-gear-icon">⚙</span>
+                </button>
+                <button class="btn btn-secondary btn-sm mode-toggle-btn" id="btn-mode-toggle" title="切换到专业自由模式（隐藏向导引导）">
+                    <span class="mode-switch" id="mode-switch"><span class="mode-switch-thumb"></span></span>
+                    <span>高级模式</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-save">保存数据</button>
+                <button class="btn btn-secondary btn-sm" id="btn-reset">重置</button>
+                <button class="btn btn-primary" id="btn-export">导出</button>
+            </div>
+        </header>
+
+        <!-- Web测量服务器地址条（运行时显示，方便复制/关闭） -->
+        <div id="web-server-address-bar" class="hidden"
+             style="display:none;align-items:center;gap:10px;padding:6px 14px;background:rgba(33,150,243,0.10);border-bottom:1px solid rgba(33,150,243,0.35);font-size:12px;">
+            <span>🌐</span>
+            <span id="web-server-bar-label" style="color:#6ab7f5;">Web测量服务器</span>
+            <code id="web-server-bar-url"
+                 style="cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);user-select:all;"
+                 title="点击复制地址"></code>
+            <button id="web-server-bar-copy" class="btn btn-secondary btn-sm" style="padding:1px 10px;">复制</button>
+            <span style="flex:1;"></span>
+            <button id="web-server-bar-close" class="btn btn-secondary btn-sm" style="padding:1px 10px;" title="停止Web测量服务器">关闭</button>
+        </div>
+
+        <!-- 主内容区：三栏布局 -->
+        <div class="main-area">
+            <!-- 左侧：工作流选择 + 参数面板 -->
+            <section class="settings-panel resizable-panel" id="settings-panel">
+
+                <!-- ========== P6-A: 工作流选择面板 ========== -->
+                <div class="panel-section workflow-selector-panel" id="workflow-selector-panel">
+                    <div class="panel-header">
+                        <h2>工作流选择</h2>
+                        <button class="btn btn-secondary btn-sm" id="btn-toggle-advanced-mode" title="切换到专业自由模式（隐藏向导引导）">高级模式</button>
+                    </div>
+                    <div class="workflow-cards" id="workflow-cards">
+                        <!-- 显示器检测 -->
+                        <div class="workflow-card" data-workflow="gamut" data-desc="测量显示器色彩表现，生成色域覆盖率报告">
+                            <img class="workflow-icon" src="../resources/icons/display-measurement.png" alt="">
+                            <div class="workflow-title">显示器检测</div>
+                            <div class="workflow-desc">sRGB/DCI-P3/Rec.2020 色域分析</div>
+                        </div>
+                        <!-- ICC 校准 -->
+                        <div class="workflow-card" data-workflow="icc" data-desc="生成显示器 ICC Profile，软件校准">
+                            <img class="workflow-icon" src="../resources/icons/icc-profile.png" alt="">
+                            <div class="workflow-title">ICC 校准</div>
+                            <div class="workflow-desc">显示器 ICC Profile 制作</div>
+                        </div>
+                        <!-- 3D LUT -->
+                        <div class="workflow-card" data-workflow="lut" data-desc="生成 3D LUT 文件，用于视频后期调色软件">
+                            <img class="workflow-icon" src="../resources/icons/lut-3d.png" alt="">
+                            <div class="workflow-title">3D LUT</div>
+                            <div class="workflow-desc">Resolve/madVR LUT 制作</div>
+                        </div>
+                        <!-- CCMX 矩阵 -->
+                        <div class="workflow-card" data-workflow="ccmx" data-desc="使用分光仪和色度计制作校正矩阵">
+                            <img class="workflow-icon" src="../resources/icons/ccmx-matrix.png" alt="">
+                            <div class="workflow-title">CCMX 矩阵</div>
+                            <div class="workflow-desc">色度计光谱校正制作</div>
+                        </div>
+                        <!-- 验证 -->
+                        <div class="workflow-card" data-workflow="validation" data-desc="验证已有 ICC/LUT 的效果">
+                            <img class="workflow-icon" src="../resources/icons/validation.png" alt="">
+                            <div class="workflow-title">验证</div>
+                            <div class="workflow-desc">校准效果验证报告</div>
+                        </div>
+                        <!-- 历史报告 -->
+                        <div class="workflow-card" data-workflow="history" data-desc="查看和管理历史测量数据">
+                            <img class="workflow-icon" src="../resources/icons/history-report.png" alt="">
+                            <div class="workflow-title">历史报告</div>
+                            <div class="workflow-desc">测量历史数据管理</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== P6-A: 步骤导航 ========== -->
+                <div class="panel-section wizard-nav-panel" id="wizard-nav-panel">
+                    <div class="wizard-steps">
+                        <div class="wizard-step" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-name">预检</div>
+                        </div>
+                        <div class="wizard-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-name">目标设置</div>
+                        </div>
+                        <div class="wizard-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-name">探头/修正</div>
+                        </div>
+                        <div class="wizard-step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-name">测量</div>
+                        </div>
+                        <div class="wizard-step" data-step="5">
+                            <div class="step-number">5</div>
+                            <div class="step-name">生成</div>
+                        </div>
+                        <div class="wizard-step" data-step="6">
+                            <div class="step-number">6</div>
+                            <div class="step-name">验证</div>
+                        </div>
+                        <div class="wizard-step" data-step="7">
+                            <div class="step-number">7</div>
+                            <div class="step-name">报告</div>
+                        </div>
+                    </div>
+                    <div class="wizard-progress-bar">
+                        <div class="wizard-progress-fill" id="wizard-progress-fill"></div>
+                    </div>
+                </div>
+
+                <!-- ========== P6-A: 步骤内容容器 ==========
+                     侧栏只保留"设置类"步骤（2 目标设置 / 3 探头修正 / 4 测量摘要）；
+                     "结果类"步骤（1 预检 / 5 生成 / 6 验证 / 7 报告）位于中列"步骤工作区"，
+                     各步骤的主操作按钮统一放在底部 patch-bar 的向导 CTA 区。 -->
+                <!-- 步骤 2: 目标设置 -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-2" data-step="2">
+                    <div class="panel-header">
+                        <h2>目标设置</h2>
+                        <button class="collapse-btn" data-target="target-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="panel-content" id="target-content">
+                        <!-- 快速预设 -->
+                        <div class="quick-presets">
+                            <div class="preset-title">快速预设</div>
+                            <div class="preset-buttons">
+                                <button class="preset-btn active" data-preset="srgb" title="sRGB 标准 - 网络和日常使用">
+                                    <span class="preset-name">sRGB</span>
+                                    <span class="preset-desc">D65 / 2.2</span>
+                                </button>
+                                <button class="preset-btn" data-preset="rec709" title="Rec.709 - HD 视频标准">
+                                    <span class="preset-name">Rec.709</span>
+                                    <span class="preset-desc">D65 / 2.4</span>
+                                </button>
+                                <button class="preset-btn" data-preset="dci-p3" title="DCI-P3 - 数字影院标准">
+                                    <span class="preset-name">DCI-P3</span>
+                                    <span class="preset-desc">D63 / 2.6</span>
+                                </button>
+                                <button class="preset-btn" data-preset="custom" title="自定义参数">
+                                    <span class="preset-name">自定义</span>
+                                    <span class="preset-desc">手动设置</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- 基础参数（已收敛） -->
+                        <div class="target-basic">
+                            <div class="form-row">
+                                <label>目标色域:</label>
+                                <select id="wizard-target-gamut">
+                                    <option value="sRGB" selected>sRGB</option>
+                                    <option value="Rec709">Rec.709</option>
+                                    <option value="DCI_P3">DCI-P3</option>
+                                    <option value="DisplayP3">Display P3</option>
+                                    <option value="AdobeRGB">Adobe RGB</option>
+                                    <option value="Rec2020">Rec.2020</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>目标白点:</label>
+                                <select id="wizard-target-white">
+                                    <option value="D65" selected>D65 (6500K)</option>
+                                    <option value="D50">D50 (5000K)</option>
+                                    <option value="D75">D75 (7500K)</option>
+                                    <option value="native">原生</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>目标 Gamma:</label>
+                                <select id="wizard-target-gamma">
+                                    <option value="2.2" selected>2.2 (sRGB)</option>
+                                    <option value="2.4">2.4 (BT.1886)</option>
+                                    <option value="2.6">2.6 (影院)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 高级参数展开 -->
+                        <div class="advanced-toggle">
+                            <button class="btn btn-secondary btn-sm btn-advanced-toggle" id="btn-advanced-target">
+                                <span class="toggle-icon">▶</span> 展开高级参数
+                            </button>
+                        </div>
+                        <div class="advanced-params hidden" id="advanced-target-params">
+                            <div class="form-row">
+                                <label>灰阶级数:</label>
+                                <select id="wizard-gray-steps">
+                                    <option value="10">10 级 (快速)</option>
+                                    <option value="21" selected>21 级 (标准)</option>
+                                    <option value="256">256 级 (精细)</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>色块数量:</label>
+                                <select id="wizard-patch-count">
+                                    <option value="auto" selected>自动推荐</option>
+                                    <option value="99">99 个</option>
+                                    <option value="288">288 个</option>
+                                    <option value="512">512 个</option>
+                                    <option value="768">768 个</option>
+                                    <option value="1024">1024 个</option>
+                                    <option value="1500">1500 个 (专业)</option>
+                                    <option value="2048">2048 个 (HDR/广色域)</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>采样策略:</label>
+                                <select id="wizard-sample-strategy">
+                                    <option value="balanced" selected>均衡覆盖</option>
+                                    <option value="dark-focused">暗部优先</option>
+                                    <option value="gray-focused">灰阶优先</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 步骤导航按钮已移至底部向导 CTA 区（btn-next-step-2） -->
+                    </div>
+                </div>
+
+                <!-- 步骤 3: 探头/修正 -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-3" data-step="3">
+                    <div class="panel-header">
+                        <h2>探头与修正</h2>
+                        <button class="collapse-btn" data-target="probe-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="panel-content" id="probe-content">
+                        <!-- 探头连接状态 -->
+                        <div class="probe-connection-panel">
+                            <div id="wizard-probe-connected-banner" class="hidden"
+                                 style="display:flex;align-items:center;gap:6px;padding:8px 10px;margin-bottom:8px;border-radius:6px;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.35);color:#7bd88a;font-size:12px;">
+                                <span>✓</span><span>探头已连接，无需切换，可直接点击"下一步"</span>
+                            </div>
+                            <div class="probe-status-row">
+                                <span class="status-indicator" id="wizard-probe-indicator"></span>
+                                <span id="wizard-probe-status-text">未连接</span>
+                            </div>
+                            <div class="button-group compact">
+                                <button class="btn btn-primary" id="wizard-btn-connect">连接探头</button>
+                                <button class="btn btn-secondary" id="wizard-btn-calibrate" disabled>校准探头</button>
+                            </div>
+                        </div>
+                        <!-- 多探头切换（检测到 >1 台校色仪时显示） -->
+                        <div class="form-row hidden" id="wizard-instrument-row">
+                            <label>切换探头:</label>
+                            <select id="wizard-instrument-select"></select>
+                        </div>
+                        <!-- 探头参数 -->
+                        <div class="probe-basic">
+                            <div class="form-row">
+                                <label>探头类型:</label>
+                                <select id="wizard-probe-type">
+                                    <option value="i1d3" selected>i1 Display Pro</option>
+                                    <option value="i1pro2">i1 Pro 2</option>
+                                    <option value="i1pro3">i1 Pro 3</option>
+                                    <option value="spydx">SpyderX</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>显示器类型:</label>
+                                <select id="wizard-display-type">
+                                    <option value="l" selected>LCD 通用</option>
+                                    <option value="e">LCD White LED</option>
+                                    <option value="b">LCD RGB LED (广色域)</option>
+                                    <option value="o">OLED</option>
+                                    <option value="w">WOLED</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 修正文件 -->
+                        <div class="correction-panel">
+                            <div class="correction-header">
+                                <span class="correction-title">光谱校正</span>
+                                <span class="correction-status" id="wizard-correction-status">未启用</span>
+                            </div>
+                            <div class="form-row">
+                                <label>修正文件:</label>
+                                <select id="wizard-correction-select">
+                                    <option value="" selected>无 (不启用)</option>
+                                </select>
+                            </div>
+                            <div class="correction-info hidden" id="wizard-correction-info">
+                                <!-- 修正文件详情动态填充 -->
+                            </div>
+                        </div>
+                        <!-- 高级参数展开 -->
+                        <div class="advanced-toggle">
+                            <button class="btn btn-secondary btn-sm btn-advanced-toggle" id="btn-advanced-probe">
+                                <span class="toggle-icon">▶</span> 展开高级参数
+                            </button>
+                        </div>
+                        <div class="advanced-params hidden" id="advanced-probe-params">
+                            <div class="form-row">
+                                <label>测量延迟:</label>
+                                <input type="number" id="wizard-measure-delay" value="500" min="100" max="5000" step="100">
+                                <span class="unit-label">ms</span>
+                            </div>
+                            <div class="form-row">
+                                <label>刷新率:</label>
+                                <select id="wizard-refresh-rate">
+                                    <option value="auto">自动检测</option>
+                                    <option value="60">60 Hz</option>
+                                    <option value="120">120 Hz</option>
+                                    <option value="144">144 Hz</option>
+                                </select>
+                            </div>
+                            <div class="form-row checkbox-row">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="wizard-oled-mode">
+                                    <span class="checkbox-text">OLED 黑帧插入</span>
+                                </label>
+                            </div>
+                            <div class="form-row checkbox-row">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="wizard-dark-multisample">
+                                    <span class="checkbox-text">暗部多重采样</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- 步骤导航按钮已移至底部向导 CTA 区（btn-next-step-3） -->
+                    </div>
+                </div>
+
+                <!-- 步骤 4: 测量 -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-4" data-step="4">
+                    <div class="panel-header">
+                        <h2>开始测量</h2>
+                        <button class="collapse-btn" data-target="measure-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="panel-content" id="measure-content">
+                        <div class="measure-summary-panel">
+                            <div class="measure-summary-header">
+                                <span>测量设置摘要</span>
+                            </div>
+                            <div class="measure-summary-items" id="wizard-measure-summary">
+                                <div class="summary-item"><span class="label">色域:</span><span class="value" id="summary-gamut">sRGB</span></div>
+                                <div class="summary-item"><span class="label">白点:</span><span class="value" id="summary-white">D65</span></div>
+                                <div class="summary-item"><span class="label">Gamma:</span><span class="value" id="summary-gamma">2.2</span></div>
+                                <div class="summary-item"><span class="label">色块数:</span><span class="value" id="summary-patches">自动</span></div>
+                            </div>
+                        </div>
+                        <div class="measure-controls">
+                            <div class="measure-patch-preview">
+                                <div class="patch-display" id="wizard-patch-display"></div>
+                                <div class="patch-info" id="wizard-patch-info">准备测量</div>
+                            </div>
+                            <!-- 开始/停止按钮已移至底部向导 CTA 区（wizard-btn-start-measure / wizard-btn-stop-measure）；
+                                 测量进度统一显示在中列"步骤工作区"内嵌的进度面板中 -->
+                        </div>
+                        <div id="wizard-probe-placement-hint" class="hidden"
+                             style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:10px;border-radius:6px;background:rgba(33,150,243,0.12);border:1px solid rgba(33,150,243,0.4);color:#6ab7f5;font-size:13px;line-height:1.5;">
+                            <span style="font-size:16px;">🎯</span>
+                            <span>测量窗口已打开——请将探头平贴在测量窗口的色块区域上（无缝透光），摆好后再点击"开始测量"。<br>窗口可拖动；多显示器时窗口位于测量屏。</span>
+                        </div>
+                        <div class="measure-hints">
+                            <div class="hint-item">💡 请确保探头正确放置在屏幕上</div>
+                            <div class="hint-item">💡 测量过程中请勿移动探头或屏幕</div>
+                        </div>
+                        <!-- 步骤导航按钮已移至底部向导 CTA 区（btn-next-step-4） -->
+                    </div>
+                </div>
+
+                <!-- 步骤 5/6/7（生成/验证/报告）面板已移至中列"步骤工作区" -->
+
+                <!-- ========== 原有探头设置区域（作为备用/专业模式） ========== -->
+                <div class="panel-section legacy-panel hidden" id="legacy-settings-panel">
+                    <div class="panel-header">
+                        <h2>高级设置面板</h2>
+                        <button class="collapse-btn" data-target="legacy-settings-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="panel-content" id="legacy-settings-content">
+
+                    <!-- 探头状态与连接 -->
+                    <div class="settings-group compact">
+                        <div class="probe-status-row">
+                            <span class="status-indicator" id="probe-indicator"></span>
+                            <span id="probe-status-text">未连接</span>
+                        </div>
+                        <div class="button-group compact">
+                            <button class="btn btn-primary" id="btn-connect-probe">连接探头</button>
+                            <button class="btn btn-secondary" id="btn-calibrate" disabled>校准探头</button>
+                        </div>
+                    </div>
+
+                    <!-- 探头参数 -->
+                    <div class="settings-group">
+                        <div class="form-row">
+                            <label data-tooltip="选择您使用的色彩测量设备&#10;&#10;• i1 Display Pro：专业级色度计&#10;• SpyderX：DataColor系列色度计&#10;• i1 Pro/Pro 2/Pro 3：X-Rite分光光度计&#10;&#10;分光光度计精度高于色度计，推荐用于专业工作">探头类型:</label>
+                            <select id="probe-type">
+                                <!-- 常用设备 -->
+                                <option value="i1d3" selected>i1 Display Pro / ColorMunki Display</option>
+                                <option value="i1pro2">i1 Pro 2</option>
+                                <option value="i1pro3">i1 Pro 3</option>
+                                <option value="colormunki">ColorMunki Photo/Design</option>
+                                <option value="spydx">SpyderX</option>
+                                <option value="spyd5">Spyder5</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── X-Rite 色度计 ──</option>
+                                <option value="i1d2">Eye-One Display 1/2/LT</option>
+                                <option value="dtp94">DTP94 / Optix XR</option>
+                                <option value="huey">Huey</option>
+                                <option value="monaco">MonacoOPTIX</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── X-Rite 分光光度计 ──</option>
+                                <option value="i1pro">Eye-One Pro (原版)</option>
+                                <option value="colormunki_smile">ColorMunki Smile/Create</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── Datacolor Spyder ──</option>
+                                <option value="spydx2">SpyderX2</option>
+                                <option value="spyder">Spyder / SpyderPRO (2024)</option>
+                                <option value="spyd4">Spyder4</option>
+                                <option value="spyd3">Spyder3</option>
+                                <option value="spyd2">Spyder2</option>
+                                <option value="spyd1">Spyder1</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── Klein / 专业设备 ──</option>
+                                <option value="k10a">Klein K10-A</option>
+                                <option value="ex1">Image Engineering EX1</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── 其他设备 ──</option>
+                                <option value="colorhug">ColorHug / ColorHug2</option>
+                                <option value="hcfr">HCFR Colorimètre</option>
+                                <option value="cube">Palette/SwatchMate Cube</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── JETI 分光光度计 ──</option>
+                                <option value="specbos">JETI specbos</option>
+                                <option value="spectraval">JETI spectraval</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── Gretag-Macbeth ──</option>
+                                <option value="spectro">Spectrolino</option>
+                                <option value="spectroscan">SpectroScan</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── X-Rite DTP 系列 ──</option>
+                                <option value="dtp20">DTP20 Pulse</option>
+                                <option value="dtp22">DTP22 Swatchbook</option>
+                                <option value="dtp41">DTP41</option>
+                                <option value="dtp51">DTP51</option>
+                                <option value="dtp92">DTP92</option>
+                                <option value="chroma">Sequel Chroma 4/5</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="选择您的显示器类型&#10;&#10;• LCD通用：大多数液晶显示器&#10;• OLED：自发光显示技术&#10;• WOLED：LG OLED电视系列&#10;• 投影仪：用于投影测量&#10;&#10;选择正确类型可以提高测量精度">显示器类型:</label>
+                            <select id="display-type">
+                                <!-- 常见类型 -->
+                                <option value="l" selected>LCD 通用</option>
+                                <option value="e">LCD White LED</option>
+                                <option value="b">LCD RGB LED (广色域)</option>
+                                <option value="o">OLED</option>
+                                <option value="w">WOLED (LG OLED电视)</option>
+                                <option value="c">CRT</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── 投影仪 ──</option>
+                                <option value="p">DLP 投影仪</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── LCD White LED 细分 ──</option>
+                                <option value="8">LCD White LED IPS</option>
+                                <option value="9">LCD White LED PVA</option>
+                                <option value="a">LCD White LED TFT</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── LCD RGB LED 细分 ──</option>
+                                <option value="c">LCD RGB LED IPS</option>
+                                <option value="d">LCD RGB LED PVA</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── LCD CCFL (老式) ──</option>
+                                <option value="1">LCD CCFL</option>
+                                <option value="2">LCD CCFL IPS</option>
+                                <option value="3">LCD CCFL PVA</option>
+                                <option value="4">LCD CCFL TFT</option>
+                                <option value="L">LCD CCFL Wide Gamut</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── LCD 荧光粉背光 ──</option>
+                                <option value="h">LCD RG Phosphor</option>
+                                <option value="r">LCD PFS Phosphor</option>
+                                <option value="i">LCD GB-R Phosphor</option>
+
+                                <!-- 分隔线 -->
+                                <option disabled>── 其他 ──</option>
+                                <option value="m">等离子 (Plasma)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="显示器的刷新率&#10;&#10;选择正确的刷新率可以确保测量同步&#10;大多数显示器为60Hz&#10;游戏显示器可能为120/144/240Hz&#10;不确定可选择"自动检测"">刷新率:</label>
+                            <select id="refresh-rate">
+                                <option value="auto">自动检测</option>
+                                <option value="60">60 Hz</option>
+                                <option value="120">120 Hz</option>
+                                <option value="144">144 Hz</option>
+                                <option value="240">240 Hz</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="每次测量色块后的等待时间(毫秒)&#10;&#10;• 默认500ms适合大多数显示器&#10;• OLED可设为100-200ms&#10;• 慢响应显示器可增加至1000ms以上">测量延迟:</label>
+                            <input type="number" id="measure-delay" value="500" min="100" max="5000" step="100">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="每个色块的重复测量次数&#10;&#10;• 1 = 关闭（默认）&#10;• >1 时对多次读数做 XYZ 线性平均&#10;可显著降低仪器随机噪声&#10;注意：总测量时间会成倍增加">平均次数:</label>
+                            <input type="number" id="measure-repeat-count" value="1" min="1" max="10" step="1">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="暗部多重采样&#10;&#10;亮度低于阈值时自动多次测量取平均&#10;解决暗部底噪偏大的问题&#10;勾选启用；左框为触发阈值(cd/m²)，右框为最大重测次数">暗部采样:</label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="checkbox" id="dark-sample-enabled" checked style="width:auto; margin:0;">
+                                <input type="number" id="dark-sample-threshold" value="0.2" min="0.01" max="5" step="0.01" title="触发阈值 (cd/m²)" style="width:70px;">
+                                <input type="number" id="dark-sample-retries" value="3" min="0" max="9" step="1" title="最大重测次数" style="width:60px;">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="CCMX/CCSS光谱校正文件&#10;&#10;用于提高色度计测量精度&#10;需要根据显示器类型选择对应的校正文件&#10;推荐使用分光仪制作专用校正文件">光谱校正:</label>
+                            <select id="correction-file-select">
+                                <option value="" selected>无 (不启用)</option>
+                            </select>
+                            <button class="btn btn-secondary" id="btn-import-edr" style="flex:none; padding:4px 10px; font-size:12px;" data-tooltip="导入 X-Rite .edr 光谱校正文件&#10;经 ArgyllCMS oeminst 转换为 .ccss&#10;EDR 文件在 i1Profiler 安装目录或仪器驱动光盘中">导入 EDR…</button>
+                        </div>
+                        <!-- 修正文件信息显示区域 -->
+                        <div id="correction-file-info" class="correction-info hidden">
+                            <span class="info-placeholder">未选择修正文件</span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- 测量模式区域 -->
+                <div class="panel-section" id="measure-mode-panel">
+                    <div class="panel-header">
+                        <h2>测量模式</h2>
+                        <button class="collapse-btn" data-target="measure-mode-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="panel-content" id="measure-mode-content">
+
+                    <!-- 模式选择下拉框 -->
+                    <div class="form-row">
+                        <label data-tooltip="选择测量工作模式&#10;&#10;• 屏幕检测：测量显示器色彩表现，生成色度报告&#10;• 屏幕校正(ICC)：软件校准，生成ICC配置文件&#10;• 硬件校准(3DLUT)：硬件校准，生成3D LUT文件&#10;• 自定义颜色：自由选择要测量的色块&#10;• CCMX矩阵：制作色度计校正文件">当前模式:</label>
+                        <select id="measure-mode-select">
+                            <option value="gamut">屏幕检测(色彩空间)</option>
+                            <option value="icc">屏幕校正(ICC制作)</option>
+                            <option value="lut">硬件校准(3DLUT制作)</option>
+                            <option value="custom">自定义颜色</option>
+                            <option value="ccmx">CCMX 矩阵制作</option>
+                            <option value="saturation">饱和度/色相扫描</option>
+                            <option value="hdr">HDR EOTF 追踪</option>
+                            <option value="uniformity">均匀性检测</option>
+                            <option value="autocal">自动校准(AutoCal闭环)</option>
+                        </select>
+                    </div>
+
+                    <!-- 色彩空间测量参数 -->
+                    <div class="mode-settings" id="gamut-settings">
+                        <div class="form-row">
+                            <label data-tooltip="控制测量时使用的灰阶数量&#10;&#10;• 10级：快速测试，基础灰阶检查&#10;• 21级：标准测量，推荐用于常规检测&#10;• 256级：精细分析，用于专业调试">灰阶级数:</label>
+                            <select id="gray-steps">
+                                <option value="10">10 级</option>
+                                <option value="21">21 级</option>
+                                <option value="256">256 级</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="设置显示器的白点色温标准&#10;&#10;• D65 (6500K)：sRGB/Rec.709标准，最常用&#10;• D50 (5000K)：印刷行业标准&#10;• D75 (7500K)：较冷的白色&#10;• 原生：保持显示器出厂设置">目标白点:</label>
+                            <select id="target-white">
+                                <option value="D65">D65 (6500K)</option>
+                                <option value="D50">D50 (5000K)</option>
+                                <option value="D75">D75 (7500K)</option>
+                                <option value="native">原生</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="设置显示器的亮度曲线标准&#10;&#10;• 2.2 (sRGB)：网络和日常使用标准&#10;• 2.4 (BT.1886)：HDTV和视频制作标准&#10;• 2.6 (影院)：电影院的放映标准&#10;• 1.8 (Mac)：老款Mac标准">目标 Gamma:</label>
+                            <select id="target-gamma">
+                                <option value="2.2">2.2 (sRGB)</option>
+                                <option value="2.4">2.4 (BT.1886)</option>
+                                <option value="2.6">2.6 (影院)</option>
+                                <option value="1.8">1.8 (Mac)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ICC校正参数 -->
+                    <div class="mode-settings hidden" id="icc-settings">
+                        <!-- 校准源选项 -->
+                        <div class="form-row" style="flex-wrap: wrap;">
+                            <label class="radio-label" data-tooltip="首次使用时推荐选择&#10;让探头自动调整显示器的亮度和色彩，达到目标状态&#10;之后可保存为.cal文件复用">
+                                <input type="radio" name="icc-cal-source" value="calibrate" id="icc-enable-calibration" checked>
+                                <span>测量前校准显示器</span>
+                            </label>
+                            <label class="radio-label" data-tooltip="使用之前校准保存的.cal文件&#10;适合重复测量同一台显示器的场景">
+                                <input type="radio" name="icc-cal-source" value="load" id="icc-load-cal-file">
+                                <span>加载cal校正文件</span>
+                            </label>
+                        </div>
+                        <!-- dispcal 校准参数 -->
+                        <div class="calibration-options" id="icc-calibration-options">
+                            <div class="form-row">
+                                <label data-tooltip="校准时目标白点色温&#10;&#10;• D65 (6500K)：sRGB/Rec.709标准&#10;• D63 (DCI-P3)：DCI-P3影院标准&#10;• D50 (5000K)：印刷标准&#10;• 原生：保持显示器出厂设置&#10;• 自定义：手动输入xy坐标值">校准白点:</label>
+                                <select id="icc-cal-white-point">
+                                    <option value="D65">D65 (6500K)</option>
+                                    <option value="D63">D63 (DCI-P3)</option>
+                                    <option value="D50">D50 (5000K)</option>
+                                    <option value="D75">D75 (7500K)</option>
+                                    <option value="native">原生</option>
+                                    <option value="custom">自定义</option>
+                                </select>
+                            </div>
+                            <div class="form-row hidden" id="icc-cal-custom-white-row">
+                            <div class="input-group">
+                                <button class="btn btn-primary btn-small" id="btn-icc-fill-white" title="从当前测量的白色填入">
+                                    <span>填入测量值</span>
+                                </button>
+                                <input type="number" id="icc-cal-white-x" value="0.3127" min="0" max="1" step="0.0001" placeholder="x" title="白点 x 坐标">
+                                <span class="input-separator">,</span>
+                                <input type="number" id="icc-cal-white-y" value="0.3290" min="0" max="1" step="0.0001" placeholder="y" title="白点 y 坐标">
+                            </div>
+                            </div>
+                            <div class="form-row">
+                                <label data-tooltip="校准时的亮度曲线&#10;&#10;• 2.2 (sRGB)：日常使用标准&#10;• 2.4 (BT.1886)：视频制作标准">Gamma:</label>
+                                <select id="icc-cal-gamma">
+                                    <option value="2.2">2.2 (sRGB)</option>
+                                    <option value="2.4">2.4 (BT.1886)</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label data-tooltip="校准测量精度&#10;&#10;• 低：快速校准，适合日常使用&#10;• 中：平衡速度与质量（推荐）&#10;• 高：最高精度，校准时间较长">质量:</label>
+                                <select id="icc-cal-quality">
+                                    <option value="m">中 (推荐)</option>
+                                    <option value="l">低 (快速)</option>
+                                    <option value="h">高 (精确)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 加载cal文件选项 -->
+                        <div class="cal-file-options hidden" id="icc-cal-file-options">
+                            <div class="form-row">
+                                <label>校正文件:</label>
+                                <select id="icc-cal-file-select">
+                                    <option value="">-- 请选择 .cal 文件 --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 分隔线 -->
+                        <hr class="section-divider">
+                        <!-- 目标显示器 -->
+                        <div class="form-row">
+                            <label data-tooltip="校准/测量目标显示器&#10;&#10;序号与 ArgyllCMS (dispwin/dispcal) 一致&#10;默认选中色块窗口当前所在屏幕">目标显示器:</label>
+                            <select id="display-index">
+                                <option value="1" selected>1. 主显示器</option>
+                            </select>
+                        </div>
+                        <!-- dispread 测量参数 -->
+                        <div class="form-row">
+                            <label data-tooltip="测量时使用的色块数量&#10;&#10;色块越多，ICC Profile精度越高&#10;• 99-288：快速，适合基础校准&#10;• 512-1024：标准，推荐日常使用&#10;• 1500+：专业，用于精细色彩工作&#10;• CIELAB采样：均匀覆盖色彩空间">测试色块:</label>
+                            <select id="icc-patch-count">
+                                <option value="99">99 色块</option>
+                                <option value="288">288 色块</option>
+                                <option value="512">512 色块</option>
+                                <option value="768">768 色块</option>
+                                <option value="1024">1024 色块</option>
+                                <option value="1500">1500 色块 (CIELAB采样)</option>
+                                <option value="2000">2000 色块 (CIELAB采样)</option>
+                                <option value="3000">3000 色块 (CIELAB采样)</option>
+                                <option value="custom">自定义数量</option>
+                            </select>
+                        </div>
+                        <div class="form-row hidden" id="icc-custom-patch-row">
+                            <label>自定义色块数:</label>
+                            <input type="number" id="icc-custom-patch-count" value="2500" min="100" max="5000" step="100" title="范围: 100-5000">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="色块在色彩空间的分布方式&#10;&#10;• 均衡覆盖：均匀采样，推荐大多数场景&#10;• 暗部优先：加强暗部细节测量&#10;• 灰阶优先：增加灰阶过渡测量&#10;• 高饱和优先：侧重高饱和色彩">采样策略:</label>
+                            <select id="icc-sample-strategy">
+                                <option value="balanced">均衡覆盖 (推荐)</option>
+                                <option value="dark-focused">暗部优先</option>
+                                <option value="gray-focused">灰阶优先</option>
+                                <option value="saturation-focused">高饱和优先</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="ICC Profile的色彩计算方式&#10;&#10;⚠️ 强烈建议使用LUT型！&#10;&#10;• LUT型：使用查找表，精度高，准确还原显示器色彩，保留正确的黑点信息，适合专业色彩工作&#10;• 矩阵型：简单矩阵计算，精度有限，黑点会被强制设为纯黑导致画面偏暗，仅适用于老旧显示器兼容性测试">Profile类型:</label>
+                            <select id="icc-profile-type">
+                                <option value="matrix">矩阵型</option>
+                                <option value="lut" selected>LUT型</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="ICC Profile计算精度&#10;&#10;• Low (低)：快速生成，精度较低&#10;• Medium (中)：平衡速度与精度&#10;• High (高)：高精度计算，推荐&#10;• Ultra (超高)：最高精度，计算时间长">质量级别:</label>
+                            <select id="icc-quality">
+                                <option value="l">Low (低)</option>
+                                <option value="m">Medium (中)</option>
+                                <option value="h" selected>High (高)</option>
+                                <option value="u">Ultra (超高)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="ICC Profile的目标白点&#10;&#10;• 同步：与校准白点完全一致&#10;• D65 (6500K)：sRGB/Rec.709标准&#10;• D50 (5000K)：印刷标准&#10;• 原生：保持显示器出厂白点">目标白点:</label>
+                            <select id="icc-target-white">
+                                <option value="sync" selected>同步（与校准白点一致）</option>
+                                <option value="D65">D65 (6500K)</option>
+                                <option value="D50">D50 (5000K)</option>
+                                <option value="native">原生</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="ICC Profile的目标Gamma曲线&#10;&#10;• 2.2 (sRGB)：日常使用标准&#10;• 2.4 (BT.1886)：视频制作标准&#10;• 2.6 (影院)：电影放映标准">目标 Gamma:</label>
+                            <select id="icc-target-gamma">
+                                <option value="2.2">2.2 (sRGB)</option>
+                                <option value="2.4">2.4 (BT.1886)</option>
+                                <option value="2.6">2.6 (影院)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- LUT校正参数 -->
+                    <div class="mode-settings hidden" id="lut-settings">
+                        <!-- 注意：LUT校正模式不进行dispcal预校准 -->
+                        <!-- 高质量3DLUT制作可以直接测量色块，无需先校准显示器 -->
+
+                        <!-- 测量参数 -->
+                        <div class="form-row">
+                            <label data-tooltip="测量时使用的色块数量&#10;&#10;色块越多，3D LUT精度越高&#10;• 99-288：快速测试&#10;• 512-1024：标准，推荐使用&#10;• 1500+：专业制作&#10;• CIELAB采样：均匀覆盖色彩空间">测试色块:</label>
+                            <select id="lut-patch-count">
+                                <option value="99">99 色块</option>
+                                <option value="288">288 色块</option>
+                                <option value="512">512 色块</option>
+                                <option value="768">768 色块</option>
+                                <option value="1024">1024 色块</option>
+                                <option value="1500">1500 色块 (CIELAB采样)</option>
+                                <option value="2000">2000 色块 (CIELAB采样)</option>
+                                <option value="3000">3000 色块 (CIELAB采样)</option>
+                                <option value="custom">自定义数量</option>
+                            </select>
+                        </div>
+                        <div class="form-row hidden" id="lut-custom-patch-row">
+                            <label>自定义色块数:</label>
+                            <input type="number" id="lut-custom-patch-count" value="2500" min="100" max="5000" step="100" title="范围: 100-5000">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="色块在色彩空间的分布方式&#10;&#10;• 均衡覆盖：均匀采样，推荐大多数场景&#10;• 暗部优先：加强暗部细节测量&#10;• 灰阶优先：增加灰阶过渡测量&#10;• 高饱和优先：侧重高饱和色彩">采样策略:</label>
+                            <select id="lut-sample-strategy">
+                                <option value="balanced">均衡覆盖 (推荐)</option>
+                                <option value="dark-focused">暗部优先</option>
+                                <option value="gray-focused">灰阶优先</option>
+                                <option value="saturation-focused">高饱和优先</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="3D LUT的网格精度&#10;&#10;• 17³ (4913点)：快速，适合实时预览&#10;• 33³ (35937点)：标准推荐，专业制作&#10;• 65³ (274625点)：最高精度，生成慢">LUT尺寸:</label>
+                            <select id="lut-size">
+                                <option value="17">17³ (快速)</option>
+                                <option value="33" selected>33³ (标准推荐)</option>
+                                <option value="65">65³ (精细)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="色彩映射时的处理方式&#10;&#10;• 相对色度：保留白点，适合视频工作（推荐）&#10;• 绝对色度：精确匹配目标色域&#10;• 感知匹配：整体优化，适合摄影">渲染意图:</label>
+                            <select id="lut-intent">
+                                <option value="r" selected>相对色度 (推荐视频)</option>
+                                <option value="p">绝对色度</option>
+                                <option value="s">感知匹配</option>
+                            </select>
+                        </div>
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" data-tooltip="防止暗部死黑&#10;&#10;启用后会调整黑场，确保暗部细节不丢失&#10;相对色度映射时推荐开启">
+                                <input type="checkbox" id="lut-use-bpc" checked>
+                                <span class="checkbox-text">黑场补偿 (BPC)</span>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="输出目标色域标准&#10;&#10;• sRGB：网络和日常使用&#10;• Rec.709：高清视频标准&#10;• DCI-P3：影院和广色域显示器&#10;• Rec.2020：超高清(UHDTV)标准">目标色域:</label>
+                            <select id="lut-target-gamut">
+                                <option value="sRGB">sRGB</option>
+                                <option value="Rec709" selected>Rec.709</option>
+                                <option value="DCI-P3">DCI-P3</option>
+                                <option value="Rec2020">Rec.2020</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="输出目标白点色温&#10;&#10;• D65 (6500K)：sRGB/Rec.709标准&#10;• D63 (DCI-P3)：DCI-P3影院标准&#10;• D50 (5000K)：印刷标准&#10;• 原生：保持显示器出厂设置&#10;• 自定义：手动输入xy坐标值">目标白点:</label>
+                            <select id="lut-target-white">
+                                <option value="D65">D65 (6500K)</option>
+                                <option value="D63">D63 (DCI-P3)</option>
+                                <option value="D50">D50 (5000K)</option>
+                                <option value="native">原生</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-row hidden" id="lut-target-custom-white-row">
+                            <div class="input-group">
+                                <button class="btn btn-primary btn-small" id="btn-lut-target-fill-white" title="从当前测量的白色填入">
+                                    <span>填入测量值</span>
+                                </button>
+                                <input type="number" id="lut-target-white-x" value="0.3127" min="0" max="1" step="0.0001" placeholder="x" title="白点 x 坐标">
+                                <span class="input-separator">,</span>
+                                <input type="number" id="lut-target-white-y" value="0.3290" min="0" max="1" step="0.0001" placeholder="y" title="白点 y 坐标">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="输出目标Gamma曲线&#10;&#10;• 2.2 (sRGB)：日常使用标准&#10;• 2.4 (BT.1886)：视频制作标准&#10;• 2.6 (影院)：电影放映标准">目标 Gamma:</label>
+                            <select id="lut-target-gamma">
+                                <option value="2.2">2.2 (sRGB)</option>
+                                <option value="2.4" selected>2.4 (BT.1886)</option>
+                                <option value="2.6">2.6 (影院)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 自定义颜色参数 -->
+                    <div class="mode-settings hidden" id="custom-settings">
+                        <!-- 文件加载区域 -->
+                        <div class="form-row">
+                            <label data-tooltip="加载已保存的自定义色块组&#10;可继续添加或编辑色块">加载色块组:</label>
+                            <select id="custom-patches-file-select">
+                                <option value="">-- 新建色块组 --</option>
+                            </select>
+                        </div>
+                        <div class="button-group" style="margin-top: 2px;">
+                            <button class="btn btn-secondary btn-sm" id="btn-load-patches-file">加载</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-delete-patches-file" disabled>删除</button>
+                        </div>
+
+                        <!-- 分隔线 -->
+                        <hr class="section-divider">
+
+                        <!-- 添加/编辑色块区域：RGB + 预览 + 按钮在一行 -->
+                        <div class="custom-add-row">
+                            <div class="rgb-input-group">
+                                <label class="rgb-label">R</label>
+                                <input type="number" id="custom-r" min="0" max="255" value="255" placeholder="0-255">
+                            </div>
+                            <div class="rgb-input-group">
+                                <label class="rgb-label">G</label>
+                                <input type="number" id="custom-g" min="0" max="255" value="128" placeholder="0-255">
+                            </div>
+                            <div class="rgb-input-group">
+                                <label class="rgb-label">B</label>
+                                <input type="number" id="custom-b" min="0" max="255" value="0" placeholder="0-255">
+                            </div>
+                            <div class="preview-box" id="custom-preview-box" style="background: rgb(255, 128, 0)"></div>
+                            <button class="btn btn-primary btn-sm" id="btn-add-custom-patch" title="添加新色块">+</button>
+                        </div>
+
+                        <!-- 分隔线 -->
+                        <hr class="section-divider">
+
+                        <!-- 色块列表 -->
+                        <div class="form-row">
+                            <label>色块列表:</label>
+                            <span class="patch-count-badge" id="custom-patch-count">0 个</span>
+                        </div>
+                        <div class="custom-patches-list" id="custom-patches-list">
+                            <div class="empty-hint">点击上方 + 添加色块</div>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <div class="button-group" style="margin-top: 6px;">
+                            <button class="btn btn-primary btn-sm" id="btn-save-patches-file" disabled>保存</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-clear-patches">清空</button>
+                        </div>
+                    </div>
+
+                    <!-- 右键菜单 -->
+                    <div class="context-menu" id="patch-context-menu">
+                        <div class="context-menu-item" id="ctx-rename">重命名</div>
+                        <div class="context-menu-item" id="ctx-delete">删除</div>
+                    </div>
+
+                    <!-- CCMX矩阵制作参数 -->
+                    <!-- HDR EOTF 追踪参数 -->
+                    <div class="mode-settings hidden" id="hdr-settings">
+                        <div class="form-row">
+                            <label data-tooltip="HDR 传递函数标准&#10;PQ (ST 2084)：HDR10 绝对亮度编码&#10;HLG：BBC/NHK 相对编码">EOTF 标准:</label>
+                            <select id="hdr-eotf">
+                                <option value="PQ">PQ (ST 2084)</option>
+                                <option value="HLG">HLG</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="显示器的目标峰值亮度&#10;测量灰阶按此峰值编码，报告以 nits 为单位比对">目标峰值:</label>
+                            <select id="hdr-peak-nits">
+                                <option value="400">400 nits</option>
+                                <option value="600">600 nits</option>
+                                <option value="1000" selected>1000 nits</option>
+                                <option value="2000">2000 nits</option>
+                                <option value="4000">4000 nits</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="测量约 21 级 HDR 灰阶（对数分布，2 nits 至峰值）&#10;完成后点击「生成追踪报告」查看逐点亮度误差与 ΔE ITP">流程:</label>
+                            <span style="font-size:12px; color:var(--text-secondary);">点击主界面「循环测量」开始，完成后生成报告</span>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-hdr-report" disabled>生成追踪报告</button>
+                        </div>
+                        <div id="hdr-report" style="display:none; margin-top:8px; font-size:12px;"></div>
+                    </div>
+
+                    <!-- 饱和度/色相扫描参数 -->
+                    <div class="mode-settings hidden" id="saturation-settings">
+                        <div class="form-row">
+                            <label data-tooltip="扫描 R/G/B/Y/M/C 六色在 25/50/75/100% 饱和度下的表现&#10;外加 12 步色相扫描和中性灰对照&#10;共 40 个色块，用于绘制饱和度追踪图">扫描内容:</label>
+                            <span style="font-size:12px; color:var(--text-secondary);">六色×4级饱和度 + 12步色相 + 中性灰<br>（共 40 块，约 3-5 分钟）</span>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="饱和度追踪图使用的目标色域">目标色域:</label>
+                            <select id="saturation-target-gamut">
+                                <option value="sRGB">sRGB / Rec.709</option>
+                                <option value="DCI-P3">DCI-P3</option>
+                                <option value="Rec2020">Rec.2020</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="测量完成后在分析区自动切换显示饱和度追踪图">自动切图:</label>
+                            <input type="checkbox" id="saturation-auto-chart" checked>
+                        </div>
+                    </div>
+
+                    <!-- 均匀性检测参数 -->
+                    <div class="mode-settings hidden" id="uniformity-settings">
+                        <div class="form-row">
+                            <label data-tooltip="测点网格布局&#10;&#10;• 3×3 九点：ISO 9241 / Calman 标准布局&#10;• 5×5 25点：更精细的面板均匀性分析">测点网格:</label>
+                            <select id="uniformity-grid">
+                                <option value="3" selected>3×3 (九点)</option>
+                                <option value="5">5×5 (25点)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="均匀性测量的信号电平&#10;&#10;• 100% 白场：亮度均匀性（最常用）&#10;• 50%/30% 灰：检测低灰阶均匀性/mura">测量电平:</label>
+                            <select id="uniformity-level">
+                                <option value="100" selected>100% 白场</option>
+                                <option value="50">50% 灰</option>
+                                <option value="30">30% 灰</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="每个测点色块占屏幕面积的百分比&#10;&#10;• 15%（默认）：适合大多数情况&#10;• 更小色块：局部 mura 检测&#10;• 更大色块：低亮度面板信噪比更好">色块面积:</label>
+                            <input type="number" id="uniformity-patch-size" value="15" min="3" max="50" step="1">
+                            <span style="font-size:11px; color:var(--text-secondary); align-self:center;">%</span>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="引导式逐点测量&#10;&#10;勾选后每个测点显示目标区域并暂停&#10;待你把探头对准该区域、点击「✓ 测量此点」(或按空格) 后才测量&#10;&#10;强烈建议勾选——手动移动探头跟不上自动循环节奏">引导模式:</label>
+                            <input type="checkbox" id="uniformity-guided" checked style="width:auto; margin:0;">
+                            <span style="font-size:11px; color:var(--text-secondary); align-self:center;">逐点确认</span>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="开始后色块会依次定位到屏幕各区域&#10;请将探头先后对准各区域中心（依进度提示）&#10;完成后自动生成亮度/色度均匀性热力图">操作提示:</label>
+                            <span style="font-size:12px; color:var(--text-secondary);">测量时探头需依次移到各测点位置</span>
+                        </div>
+                    </div>
+
+                    <!-- 自动校准(AutoCal)参数 -->
+                    <div class="mode-settings hidden" id="autocal-settings">
+                        <div class="form-row">
+                            <label data-tooltip="通过 DDC/CI 协议连接显示器控制通道&#10;连接后可自动调节亮度/RGB增益等OSD参数">显示器通道:</label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <select id="autocal-display-id" style="width:70px;">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                                <button class="btn btn-secondary" id="btn-ddc-connect" style="flex:1;">连接 DDC/CI</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label></label>
+                            <span id="ddc-status" style="font-size:12px; color:var(--text-secondary);">未连接</span>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="校准的目标白点色温&#10;D65 为 sRGB/Rec.709 标准">目标白点:</label>
+                            <select id="autocal-white">
+                                <option value="D65">D65 (6500K)</option>
+                                <option value="D50">D50 (5000K)</option>
+                                <option value="D75">D75 (7500K)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="目标白场亮度 (cd/m²)&#10;常见值：SDR 100-120，专业 120-160">目标亮度:</label>
+                            <input type="number" id="autocal-target-y" value="120" min="20" max="1000" step="5">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="目标 Gamma 曲线">目标 Gamma:</label>
+                            <select id="autocal-gamma">
+                                <option value="2.2">2.2 (sRGB)</option>
+                                <option value="2.4">2.4 (BT.1886)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="判定校准合格的 Delta E 阈值&#10;专业标准通常 ≤ 2.0">ΔE 合格线:</label>
+                            <input type="number" id="autocal-de-threshold" value="2.0" min="0.5" max="10" step="0.5">
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="最多执行多少轮 测量→调整→验证 闭环">最大迭代:</label>
+                            <select id="autocal-max-iter">
+                                <option value="3">3 轮</option>
+                                <option value="5" selected>5 轮</option>
+                                <option value="8">8 轮</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="写入显示器参数后等待面板稳定的时间">稳定等待:</label>
+                            <select id="autocal-settling">
+                                <option value="2">2 秒</option>
+                                <option value="5" selected>5 秒</option>
+                                <option value="10">10 秒</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="演练模式：只计算调整方案并显示测量结果&#10;不实际写入显示器">演练模式:</label>
+                            <input type="checkbox" id="autocal-dry-run">
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-autocal-start" disabled>启动自动校准</button>
+                            <button class="btn btn-stop" id="btn-autocal-stop" disabled>停止</button>
+                            <button class="btn btn-secondary" id="btn-ddc-snapshot" disabled title="保存当前显示器参数，用于失败时回滚">保存快照</button>
+                            <button class="btn btn-secondary" id="btn-ddc-rollback" disabled title="回滚到最近的快照">回滚</button>
+                        </div>
+                        <div id="autocal-progress-container" style="display:none; margin-top:8px;">
+                            <div class="progress-bar-container"><div class="progress-bar-fill" id="autocal-progress-fill" style="width:0%"></div></div>
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;" id="autocal-progress-text">就绪</div>
+                        </div>
+                    </div>
+
+                    <div class="mode-settings hidden" id="ccmx-settings">
+                        <div class="form-row">
+                            <label data-tooltip="选择分光仪（如i1Pro）测量的数据&#10;作为参考标准，用于制作校正矩阵">分光仪数据:</label>
+                            <select id="ccmx-ref-select">
+                                <option value="">-- 请选择分光仪测量数据 --</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label data-tooltip="选择色度计（如Spyder）测量的数据&#10;将被校正以匹配分光仪数据">色度计数据:</label>
+                            <select id="ccmx-target-select">
+                                <option value="">-- 请选择色度计测量数据 --</option>
+                            </select>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="btn-create-ccmx" disabled title="两次测量必须使用相同的色块（白、红、绿、蓝）才能生成CCMX矩阵">制作CCMX矩阵</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- 水平拖拽分隔条 -->
+                <div class="resize-handle-h" data-panel="settings"></div>
+            </section>
+
+            <!-- 中间：色块预览 + 测量结果（上下布局） -->
+            <section class="middle-panel resizable-panel" id="middle-panel">
+                <!-- 上部：色块预览 -->
+                <div class="patch-section" id="patch-section">
+                    <div class="section-header">
+                        <h3>色块预览</h3>
+                        <span class="patch-info" id="patch-info">RGB(0, 0, 0)</span>
+                        <button class="collapse-btn small" data-target="patch-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="patch-content">
+                    <div class="patch-display" id="patch-display">
+                    </div>
+                    <button class="btn btn-secondary btn-full" id="btn-open-window">打开测量窗口</button>
+                    </div>
+                </div>
+                <!-- 垂直拖拽分隔条 -->
+                <div class="resize-handle-v" data-section="middle"></div>
+                <!-- 中部：历史数据 -->
+                <div class="history-section" id="history-section">
+                    <div class="section-header">
+                        <h3>历史数据</h3>
+                        <button class="collapse-btn small" data-target="history-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="history-content">
+                    <!-- 第一行：选择记录与操作按钮 -->
+                    <div class="history-row">
+                        <div class="history-item">
+                            <label>选择记录:</label>
+                            <select id="history-select">
+                                <option value="">-- 当前测量 --</option>
+                            </select>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn btn-secondary btn-sm btn-refresh" id="btn-refresh-history" title="刷新列表">
+                                <svg class="refresh-icon" viewBox="0 0 24 24" width="16" height="16">
+                                    <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-primary" id="btn-load-history" disabled>加载</button>
+                            <button class="btn btn-primary" id="btn-delete-history" disabled>删除</button>
+                            <button class="btn btn-primary" id="btn-compare-history">数据对比</button>
+                        </div>
+                    </div>
+                    <!-- 第二行：文件信息 -->
+                    <div class="history-info-row">
+                        <span class="history-tag" id="history-probe">探头: --</span>
+                        <span class="history-tag" id="history-display">显示器: --</span>
+                        <span class="history-tag" id="history-time">时间: --</span>
+                        <span class="history-tag" id="history-data-type">数据: --</span>
+                    </div>
+                    </div>
+                </div>
+                <!-- 垂直拖拽分隔条 -->
+                <div class="resize-handle-v" id="resize-handle-history" data-section="middle-history"></div>
+                <!-- 下部：测量结果 + 步骤详情（同一滚动容器，内容多时整体下滚、互不裁切） -->
+                <div class="lower-scroll-area" id="lower-scroll-area">
+                <!-- 测量结果 -->
+                <div class="results-section" id="results-section">
+                    <div class="section-header">
+                        <h3>测量结果</h3>
+                        <button class="collapse-btn small" data-target="results-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="results-content">
+                    <!-- 显示器基础数据面板 -->
+                    <div class="display-data-panel">
+                        <div class="panel-title">显示器基础数据</div>
+                        <div class="data-row four-col">
+                            <div class="data-item">
+                                <span class="data-label">峰值亮度</span>
+                                <span class="data-value" id="display-peak-luminance">-- cd/m²</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">黑场亮度</span>
+                                <span class="data-value" id="display-black-luminance">-- cd/m²</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">对比度</span>
+                                <span class="data-value" id="display-contrast">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Gamma</span>
+                                <span class="data-value highlight" id="display-gamma">--</span>
+                            </div>
+                        </div>
+                        <div class="data-row four-col">
+                            <div class="data-item">
+                                <span class="data-label">白点色温</span>
+                                <span class="data-value" id="display-white-cct">-- K</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">白点x</span>
+                                <span class="data-value" id="display-white-x">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">白点y</span>
+                                <span class="data-value" id="display-white-y">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">白点偏差</span>
+                                <span class="data-value" id="display-white-deviation">-- ΔE</span>
+                            </div>
+                        </div>
+                        <div class="gamut-coverage-row">
+                            <span class="gamut-label">色域覆盖</span>
+                            <div class="gamut-coverage-items">
+                                <span class="gamut-coverage-item"><span class="gamut-name">sRGB</span><span class="gamut-value" id="gamut-srgb">--%</span></span>
+                                <span class="gamut-coverage-item"><span class="gamut-name">DCI-P3</span><span class="gamut-value" id="gamut-p3">--%</span></span>
+                                <span class="gamut-coverage-item"><span class="gamut-name">AdobeRGB</span><span class="gamut-value" id="gamut-adobe">--%</span></span>
+                                <span class="gamut-coverage-item"><span class="gamut-name">Rec.2020</span><span class="gamut-value" id="gamut-rec2020">--%</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 实时色块数据面板 -->
+                    <div class="patch-data-panel">
+                        <div class="panel-title">当前色块数据</div>
+                        <div class="patch-header-row">
+                            <span class="patch-name" id="patch-name">--</span>
+                            <span class="patch-rgb" id="patch-rgb">RGB(--, --, --)</span>
+                        </div>
+                        <div class="data-row compact-row patch-data-row">
+                            <div class="data-item">
+                                <span class="data-label">x, y</span>
+                                <span class="data-value" id="patch-xy">--, --</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">Y</span>
+                                <span class="data-value" id="patch-Y">-- cd/m²</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">色温</span>
+                                <span class="data-value" id="patch-cct">-- K</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">ΔE</span>
+                                <span class="data-value" id="patch-deltae">--</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">u'v'</span>
+                                <span class="data-value" id="patch-uv">--, --</span>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <!-- 下部：步骤工作区（引导模式显示当前步骤的详情/日志/进度） -->
+                <div class="step-workspace-section" id="step-workspace-section">
+                    <div class="section-header">
+                        <h3 id="step-workspace-title">步骤详情</h3>
+                        <button class="collapse-btn small" data-target="step-workspace-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="step-workspace-content">
+                        <div class="workspace-hint hidden" id="workspace-hint"></div>
+
+                <!-- 步骤 1: 预检（位于中列工作区） -->
+                <div class="panel-section wizard-step-content" id="wizard-step-1" data-step="1">
+                    <div class="panel-header">
+                        <h2>环境预检</h2>
+                        <span class="preflight-summary" id="preflight-summary">尚未开始预检</span>
+                    </div>
+                    <div class="panel-content" id="preflight-content">
+                        <div class="preflight-results" id="preflight-results">
+                            <!-- 预检结果动态填充 -->
+                        </div>
+                        <div class="preflight-override-panel hidden" id="preflight-override-panel">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="preflight-override-checkbox">
+                                <span class="checkbox-text">高级覆盖（忽略阻断项继续）</span>
+                            </label>
+                            <div class="override-warning hidden" id="preflight-override-warning">
+                                ⚠️ 启用高级覆盖可能影响测量准确性，请确保了解风险
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤 5: 生成（位于中列工作区） -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-5" data-step="5">
+                    <div class="panel-header">
+                        <h2>生成结果</h2>
+                    </div>
+                    <div class="panel-content" id="generate-content">
+                        <div class="generate-options" id="wizard-generate-options">
+                            <!-- 根据工作流类型动态填充 -->
+                        </div>
+                        <div class="generate-preview hidden" id="wizard-generate-preview">
+                            <!-- 生成结果预览 -->
+                        </div>
+                        <!-- 生成完成由底部 CTA 区"下一步：验证 →"继续（btn-next-step-5） -->
+                    </div>
+                </div>
+
+                <!-- 步骤 6: 验证（位于中列工作区） -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-6" data-step="6">
+                    <div class="panel-header">
+                        <h2>效果验证</h2>
+                    </div>
+                    <div class="panel-content" id="validate-content">
+                        <div class="validate-results" id="wizard-validate-results">
+                            <!-- 验证结果动态填充 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤 7: 报告（位于中列工作区） -->
+                <div class="panel-section wizard-step-content hidden" id="wizard-step-7" data-step="7">
+                    <div class="panel-header">
+                        <h2>导出报告</h2>
+                    </div>
+                    <div class="panel-content" id="report-content">
+                        <div class="report-summary" id="wizard-report-summary">
+                            <!-- 报告摘要动态填充 -->
+                        </div>
+                        <div class="report-actions">
+                            <button class="btn btn-primary" id="wizard-btn-export-pdf">导出 PDF</button>
+                            <button class="btn btn-secondary" id="wizard-btn-export-html">导出 HTML</button>
+                            <button class="btn btn-secondary" id="wizard-btn-export-json">导出 JSON</button>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                </div>
+                </div><!-- /lower-scroll-area -->
+                <!-- 水平拖拽分隔条 -->
+                <div class="resize-handle-h" data-panel="middle"></div>
+            </section>
+
+            <!-- 右侧：色度图 + Gamma曲线（上下布局） -->
+            <section class="right-panel" id="right-panel">
+                <!-- 上部：CIE 1931 色度图 -->
+                <div class="chart-section" id="chart-section">
+                    <div class="section-header">
+                        <h3>CIE 1931 色度图</h3>
+                        <div class="preset-selector">
+                            <button class="preset-toggle-btn" id="gamut-preset-toggle" title="选择参考色域">
+                                <span class="preset-toggle-icon">▼</span>
+                                <span class="preset-toggle-text">参考色域</span>
+                            </button>
+                            <!-- 色域预设选择面板 -->
+                            <div class="preset-panel" id="gamut-preset-panel">
+                                <div class="preset-category">
+                                    <div class="preset-category-title">基础色域</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="sRGB" checked>
+                                            <span class="preset-color-dot" style="background: #00ff00"></span>
+                                            <span class="preset-name">sRGB</span>
+                                            <span class="preset-desc">IEC 61966-2-1</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="Rec709">
+                                            <span class="preset-color-dot" style="background: #00ff88"></span>
+                                            <span class="preset-name">Rec.709</span>
+                                            <span class="preset-desc">HD视频标准</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">宽色域</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="DCI_P3">
+                                            <span class="preset-color-dot" style="background: #ff6b6b"></span>
+                                            <span class="preset-name">DCI-P3</span>
+                                            <span class="preset-desc">数字影院</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="DisplayP3">
+                                            <span class="preset-color-dot" style="background: #ff8888"></span>
+                                            <span class="preset-name">Display P3</span>
+                                            <span class="preset-desc">Apple D65</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="AdobeRGB">
+                                            <span class="preset-color-dot" style="background: #4ecdc4"></span>
+                                            <span class="preset-name">Adobe RGB</span>
+                                            <span class="preset-desc">1998</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="Rec2020">
+                                            <span class="preset-color-dot" style="background: #ffe66d"></span>
+                                            <span class="preset-name">Rec.2020</span>
+                                            <span class="preset-desc">UHD/4K/8K</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">专业电影</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="ProPhotoRGB">
+                                            <span class="preset-color-dot" style="background: #9b59b6"></span>
+                                            <span class="preset-name">ProPhoto RGB</span>
+                                            <span class="preset-desc">摄影宽色域</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="ACES_AP0">
+                                            <span class="preset-color-dot" style="background: #f39c12"></span>
+                                            <span class="preset-name">ACES AP0</span>
+                                            <span class="preset-desc">Academic</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="ACES_AP1">
+                                            <span class="preset-color-dot" style="background: #f1c40f"></span>
+                                            <span class="preset-name">ACES AP1</span>
+                                            <span class="preset-desc">ACEScg</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">品牌色域</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="S_Gamut3">
+                                            <span class="preset-color-dot" style="background: #3498db"></span>
+                                            <span class="preset-name">S-Gamut3</span>
+                                            <span class="preset-desc">Sony</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="V_Gamut">
+                                            <span class="preset-color-dot" style="background: #1abc9c"></span>
+                                            <span class="preset-name">V-Gamut</span>
+                                            <span class="preset-desc">Panasonic</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="C_Gamut">
+                                            <span class="preset-color-dot" style="background: #16a085"></span>
+                                            <span class="preset-name">C-Gamut</span>
+                                            <span class="preset-desc">Canon</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamut-preset" value="REDWideGamutRGB">
+                                            <span class="preset-color-dot" style="background: #c0392b"></span>
+                                            <span class="preset-name">RED WideGamut</span>
+                                            <span class="preset-desc">RED</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="section-content" id="cie-content">
+                        <div id="cie-chart" class="cie-chart"></div>
+                    </div>
+                </div>
+                <!-- 下部：Gamma 曲线 -->
+                <div class="gamma-section" id="gamma-section">
+                    <div class="section-header">
+                        <h3>Gamma 曲线</h3>
+                        <div class="preset-selector">
+                            <button class="preset-toggle-btn" id="gamma-preset-toggle" title="选择参考曲线">
+                                <span class="preset-toggle-icon">▼</span>
+                                <span class="preset-toggle-text">参考曲线</span>
+                            </button>
+                            <!-- Gamma预设选择面板 -->
+                            <div class="preset-panel" id="gamma-preset-panel">
+                                <div class="preset-category">
+                                    <div class="preset-category-title">标准Gamma</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="1.8">
+                                            <span class="preset-color-dot" style="background: #0abde3"></span>
+                                            <span class="preset-name">Gamma 1.8</span>
+                                            <span class="preset-desc">Mac传统</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="2.2" checked>
+                                            <span class="preset-color-dot" style="background: #8888a0"></span>
+                                            <span class="preset-name">Gamma 2.2</span>
+                                            <span class="preset-desc">sRGB标准</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="2.4">
+                                            <span class="preset-color-dot" style="background: #ff9f43"></span>
+                                            <span class="preset-name">Gamma 2.4</span>
+                                            <span class="preset-desc">BT.1886</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="2.6">
+                                            <span class="preset-color-dot" style="background: #ee5a24"></span>
+                                            <span class="preset-name">Gamma 2.6</span>
+                                            <span class="preset-desc">DCI影院</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">复合曲线</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="sRGB">
+                                            <span class="preset-color-dot" style="background: #10b981"></span>
+                                            <span class="preset-name">sRGB曲线</span>
+                                            <span class="preset-desc">IEC标准</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="Rec709">
+                                            <span class="preset-color-dot" style="background: #6c5ce7"></span>
+                                            <span class="preset-name">Rec.709</span>
+                                            <span class="preset-desc">BT.709</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="BT1886">
+                                            <span class="preset-color-dot" style="background: #fdcb6e"></span>
+                                            <span class="preset-name">BT.1886</span>
+                                            <span class="preset-desc">黑场补偿</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">HDR曲线</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="PQ">
+                                            <span class="preset-color-dot" style="background: #e17055"></span>
+                                            <span class="preset-name">ST 2084 PQ</span>
+                                            <span class="preset-desc">HDR10</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="HLG">
+                                            <span class="preset-color-dot" style="background: #00b894"></span>
+                                            <span class="preset-name">HLG</span>
+                                            <span class="preset-desc">BBC/NHK</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">Log曲线</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="LogC">
+                                            <span class="preset-color-dot" style="background: #74b9ff"></span>
+                                            <span class="preset-name">ARRI Log C</span>
+                                            <span class="preset-desc">Alexa</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="SLog3">
+                                            <span class="preset-color-dot" style="background: #0984e3"></span>
+                                            <span class="preset-name">S-Log3</span>
+                                            <span class="preset-desc">Sony</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="VLog">
+                                            <span class="preset-color-dot" style="background: #81ecec"></span>
+                                            <span class="preset-name">V-Log</span>
+                                            <span class="preset-desc">Panasonic</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="CLog">
+                                            <span class="preset-color-dot" style="background: #55a3ff"></span>
+                                            <span class="preset-name">C-Log</span>
+                                            <span class="preset-desc">Canon</span>
+                                        </label>
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="ACEScct">
+                                            <span class="preset-color-dot" style="background: #a29bfe"></span>
+                                            <span class="preset-name">ACEScct</span>
+                                            <span class="preset-desc">ACES Log</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="preset-category">
+                                    <div class="preset-category-title">线性</div>
+                                    <div class="preset-items">
+                                        <label class="preset-item">
+                                            <input type="checkbox" name="gamma-preset" value="Linear">
+                                            <span class="preset-color-dot" style="background: #ffeaa7"></span>
+                                            <span class="preset-name">Linear</span>
+                                            <span class="preset-desc">Gamma 1.0</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="section-content" id="gamma-content">
+                        <div id="gamma-chart" class="gamma-chart"></div>
+                    </div>
+                </div>
+                <!-- 饱和度追踪图 (P2 集成) -->
+                <div class="gamma-section" id="saturation-section">
+                    <div class="section-header">
+                        <h3>饱和度追踪</h3>
+                        <select id="saturation-chart-gamut" class="section-select" title="饱和度误差参考色域">
+                            <option value="sRGB">vs sRGB</option>
+                            <option value="DCI-P3">vs DCI-P3</option>
+                            <option value="Rec2020">vs Rec.2020</option>
+                        </select>
+                        <button class="collapse-btn small" data-target="saturation-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="saturation-content">
+                        <div id="saturation-chart" class="gamma-chart" style="min-height:220px;">
+                            <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); font-size:13px;">
+                                切换到「饱和度/色相扫描」模式测量后显示
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 色温(CCT)追踪图 (P2 集成) -->
+                <div class="gamma-section" id="cct-section">
+                    <div class="section-header">
+                        <h3>色温 (CCT) 追踪</h3>
+                        <button class="collapse-btn small" data-target="cct-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="cct-content">
+                        <div id="cct-chart" class="gamma-chart" style="min-height:220px;">
+                            <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); font-size:13px;">
+                                灰阶测量后显示色温/Δuv 追踪曲线
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 均匀性热力图 (对标 Calman uniformity) -->
+                <div class="gamma-section hidden" id="uniformity-section">
+                    <div class="section-header">
+                        <h3>均匀性分析</h3>
+                        <button class="collapse-btn small" data-target="uniformity-content" title="折叠/展开">▼</button>
+                    </div>
+                    <div class="section-content" id="uniformity-content">
+                        <div id="uniformity-summary" class="uniformity-summary"></div>
+                        <div id="uniformity-heatmap" class="uniformity-heatmap"></div>
+                        <div id="uniformity-legend" class="uniformity-legend">
+                            <span>偏差 &lt; 3%</span>
+                            <span class="uni-swatch" style="background:#10b981;"></span>
+                            <span class="uni-swatch" style="background:#f59e0b;"></span>
+                            <span class="uni-swatch" style="background:#ef4444;"></span>
+                            <span>偏差 &gt; 10%</span>
+                            <span style="color:var(--text-secondary); font-size:11px;">（相对中心测点的亮度偏差，鼠标悬停查看详情）</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 底部：色块选择栏 -->
+        <section class="patch-bar">
+            <!-- 色块列表区域（动态更新） -->
+            <div class="patch-list-area" id="patch-list-area">
+                <div class="patch-group">
+                    <span class="patch-group-label">原色</span>
+                    <div class="patch-item">
+                        <button class="patch-btn" data-color="255,0,0" data-name="红" style="background: rgb(255,0,0)"></button>
+                        <span class="patch-label">红</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn" data-color="0,255,0" data-name="绿" style="background: rgb(0,255,0)"></button>
+                        <span class="patch-label">绿</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn" data-color="0,0,255" data-name="蓝" style="background: rgb(0,0,255)"></button>
+                        <span class="patch-label">蓝</span>
+                    </div>
+                </div>
+
+                <div class="patch-group">
+                    <span class="patch-group-label">基准</span>
+                    <div class="patch-item">
+                        <button class="patch-btn" data-color="255,255,255" data-name="白" style="background: rgb(255,255,255)"></button>
+                        <span class="patch-label">白</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn" data-color="0,0,0" data-name="黑" style="background: rgb(0,0,0)"></button>
+                        <span class="patch-label">黑</span>
+                    </div>
+                </div>
+
+                <div class="patch-group">
+                    <span class="patch-group-label">灰阶</span>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="25,25,25" data-name="10%" style="background: rgb(25,25,25)"></button>
+                        <span class="patch-label">10%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="51,51,51" data-name="20%" style="background: rgb(51,51,51)"></button>
+                        <span class="patch-label">20%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="76,76,76" data-name="30%" style="background: rgb(76,76,76)"></button>
+                        <span class="patch-label">30%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="102,102,102" data-name="40%" style="background: rgb(102,102,102)"></button>
+                        <span class="patch-label">40%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="128,128,128" data-name="50%" style="background: rgb(128,128,128)"></button>
+                        <span class="patch-label">50%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="153,153,153" data-name="60%" style="background: rgb(153,153,153)"></button>
+                        <span class="patch-label">60%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="179,179,179" data-name="70%" style="background: rgb(179,179,179)"></button>
+                        <span class="patch-label">70%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="204,204,204" data-name="80%" style="background: rgb(204,204,204)"></button>
+                        <span class="patch-label">80%</span>
+                    </div>
+                    <div class="patch-item">
+                        <button class="patch-btn gray-step" data-color="230,230,230" data-name="90%" style="background: rgb(230,230,230)"></button>
+                        <span class="patch-label">90%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 测量按钮组（固定位置，高级/自由模式使用） -->
+            <div class="patch-group measure-group" id="measure-group-free">
+                <button class="btn btn-measure" id="btn-measure-single" disabled>单次测量</button>
+                <button class="btn btn-cycle" id="btn-cycle-all">循环测量</button>
+                <button class="btn btn-stop" id="btn-stop" disabled>停止</button>
+            </div>
+
+            <!-- 向导步骤操作区（引导模式显示，按钮随当前步骤切换） -->
+            <div class="wizard-cta-area hidden" id="wizard-cta-area">
+                <span class="wizard-cta-status" id="wizard-cta-status">步骤 1/7 · 环境预检</span>
+                <div class="wizard-cta-buttons">
+                    <button class="btn btn-primary wizard-cta-btn" id="btn-run-preflight" data-step="1">开始预检</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-1" data-step="1" disabled>下一步：目标设置 →</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-2" data-step="2">下一步：探头/修正 →</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-3" data-step="3">下一步：测量 →</button>
+                    <button class="btn btn-primary wizard-cta-btn" id="wizard-btn-start-measure" data-step="4">开始测量</button>
+                    <button class="btn btn-danger wizard-cta-btn wizard-cta-dynamic hidden" id="wizard-btn-stop-measure" data-step="4">停止测量</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-4" data-step="4" disabled>下一步 →</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-5" data-step="5" disabled>下一步：验证 →</button>
+                    <button class="btn btn-primary btn-next-step wizard-cta-btn" id="btn-next-step-6" data-step="6">下一步：报告 →</button>
+                    <button class="btn btn-success wizard-cta-btn" id="wizard-btn-complete" data-step="7">完成工作流</button>
+                    <button class="btn btn-secondary wizard-cta-btn" id="wizard-btn-new-workflow" data-step="7">开始新工作流</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 底部状态栏 -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="status-text">就绪</span>
+            </div>
+            <div class="status-right">
+                <span id="log-output"></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ICC 快速生成弹窗 -->
+    <div class="modal-overlay" id="icc-modal-overlay">
+        <div class="modal-dialog" id="icc-modal">
+            <div class="modal-header">
+                <h3>⚡ 快速生成 ICC</h3>
+                <button class="modal-close-btn" id="icc-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 提示信息 -->
+                <div class="modal-tip">
+                    💡 使用测量白色色块的实际白点，使用默认质量配置快速生成。如需自定义参数，请使用右上角的"导出"按钮。
+                </div>
+
+                <!-- 文件保存位置 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">📁</span>
+                        <span>保存位置</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="file-path-row">
+                            <input type="text" id="icc-file-path" class="file-path-input" placeholder="选择保存路径...">
+                            <button class="btn btn-secondary btn-sm" id="icc-browse-btn">浏览...</button>
+                        </div>
+                        <div class="form-row">
+                            <label>文件名:</label>
+                            <input type="text" id="icc-file-name" class="filename-input" value="">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输出格式选择 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">📄</span>
+                        <span>输出格式</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="format-options">
+                            <label class="format-option">
+                                <input type="radio" name="icc-format" value="icc" checked>
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">ICC Profile</span>
+                                <span class="format-desc">标准显示器校色文件</span>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="icc-format" value="ti3">
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">TI3</span>
+                                <span class="format-desc">ArgyllCMS 测量数据格式</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ICC 参数设置（简化版） -->
+                <div class="modal-section" id="icc-params-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">⚙️</span>
+                        <span>ICC 参数</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label title="选择ICC Profile的类型，决定色彩转换的精度和方式">Profile 类型:</label>
+                            <select id="icc-output-profile-type" title="⚠️ 强烈建议使用LUT型！
+• LUT型：使用查找表，精度高，准确还原显示器色彩，保留正确的黑点信息，适合专业色彩工作
+• 矩阵型：使用简单矩阵计算，精度有限，黑点会被强制设为纯黑导致画面偏暗，仅适用于老旧显示器的兼容性测试或OLED等黑点接近纯黑的面板">
+                                <option value="matrix">矩阵型 (快速，不推荐)</option>
+                                <option value="lut" selected>LUT型 (精确，推荐)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label title="设置ICC Profile的计算质量，影响生成时间和精度">质量级别:</label>
+                            <select id="icc-output-quality" title="选择ICC计算质量：
+• Low (低)：快速生成，精度较低，仅用于快速预览
+• Medium (中)：平衡速度与精度，适合日常使用
+• High (高)：高精度计算，推荐专业用途，约1分钟
+• Ultra (超高)：最高精度，计算时间较长(6分钟+)，仅在需要极致精度时使用">
+                                <option value="l">Low (低，快速)</option>
+                                <option value="m">Medium (中，平衡)</option>
+                                <option value="h" selected>High (高，推荐)</option>
+                                <option value="u">Ultra (超高，慢)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label title="当源色域超出显示器色域时，如何处理超出部分的颜色">色域映射:</label>
+                            <select id="icc-output-gamut-mapping" title="选择超出显示器色域的颜色的处理方式：
+• 感知映射：平滑压缩超出色域的颜色，保持整体视觉平衡，推荐照片处理
+• 相对色度：将超出色域的颜色映射到最近的边界颜色，保持色域内颜色准确
+• 饱和度映射：保持饱和度优先，可能改变色相，用于图表等
+• 绝对色度：不调整白点和黑点，精确模拟源设备，适合打样">
+                                <option value="perceptual">感知映射</option>
+                                <option value="relative">相对色度</option>
+                                <option value="saturation">饱和度映射</option>
+                                <option value="absolute">绝对色度</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label title="黑场补偿：改善暗部细节，但可能在某些显示器上产生色偏">黑场补偿:</label>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="icc-black-compensation" checked>
+                                <label for="icc-black-compensation" title="启用后会调整黑点以改善暗部细节和阴影层次，但在某些显示器上可能导致轻微色偏">启用黑场补偿</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label title="勾选后自动将ICC文件安装到系统并应用为显示器默认配置">应用ICC:</label>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="icc-apply-profile" checked>
+                                <label for="icc-apply-profile" title="勾选后将ICC文件拷贝到系统ColorSync目录(W)或ColorSync文件夹(M)并立即应用，无需手动安装">应用ICC色彩描述文件</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TI3 参数设置（隐藏） -->
+                <div class="modal-section hidden" id="ti3-params-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">⚙️</span>
+                        <span>TI3 参数</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label>包含数据:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="ti3-include-gamut" checked>
+                                    <span>色域数据</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="ti3-include-gamma" checked>
+                                    <span>灰阶数据</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="icc-modal-cancel">取消</button>
+                <button class="btn btn-primary" id="icc-modal-create">快速生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LUT 快速生成弹窗 -->
+    <div class="modal-overlay" id="lut-modal-overlay">
+        <div class="modal-dialog" id="lut-modal">
+            <div class="modal-header">
+                <h3>⚡ 快速生成 LUT</h3>
+                <button class="modal-close-btn" id="lut-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 提示信息 -->
+                <div class="modal-tip">
+                    💡 使用测量时已设置的色域、Gamma 等参数，使用默认质量配置快速生成。如需自定义参数，请使用右上角的"导出"按钮。
+                </div>
+
+                <!-- 文件保存位置 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">📁</span>
+                        <span>保存位置</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="file-path-row">
+                            <input type="text" id="lut-file-path" class="file-path-input" placeholder="选择保存路径...">
+                            <button class="btn btn-secondary btn-sm" id="lut-browse-btn">浏览...</button>
+                        </div>
+                        <div class="form-row">
+                            <label>文件名:</label>
+                            <input type="text" id="lut-file-name" class="filename-input" value="">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输出格式选择 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">📄</span>
+                        <span>输出格式</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="format-options">
+                            <label class="format-option">
+                                <input type="radio" name="lut-format" value="cube" checked>
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">CUBE</span>
+                                <span class="format-desc">Adobe/Resolve 通用格式</span>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="lut-format" value="3dl">
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">3DL</span>
+                                <span class="format-desc">Autodesk Lustre 格式</span>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="lut-format" value="mga">
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">MGA</span>
+                                <span class="format-desc">Pandora 格式</span>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="lut-format" value="clf">
+                                <span class="format-radio-custom"></span>
+                                <span class="format-name">CLF</span>
+                                <span class="format-desc">ACES 规范格式</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LUT 参数设置（简化版） -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">⚙️</span>
+                        <span>LUT 参数</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label>LUT 尺寸:</label>
+                            <select id="lut-output-size">
+                                <option value="17">17³ (快速)</option>
+                                <option value="33">33³ (标准)</option>
+                                <option value="65">65³ (精细)</option>
+                                <option value="129">129³ (超精细)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label title="设置3D LUT的计算质量，影响生成时间和精度">质量级别:</label>
+                            <select id="lut-output-quality" title="选择3D LUT计算质量：
+• Low (低)：快速生成
+• Medium (中)：平衡速度与精度
+• High (高)：高精度计算，推荐
+• Ultra (超高)：最高精度，计算时间长">
+                                <option value="l">Low (低)</option>
+                                <option value="m">Medium (中)</option>
+                                <option value="h" selected>High (高)</option>
+                                <option value="u">Ultra (超高)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>输入范围:</label>
+                            <select id="lut-input-range">
+                                <option value="full">Full Range (0-255)</option>
+                                <option value="video">Video Range (16-235)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>插值方式:</label>
+                            <select id="lut-interpolation">
+                                <option value="trilinear">三线性插值</option>
+                                <option value="tetrahedral">四面体插值</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>黑场提升:</label>
+                            <div class="slider-row">
+                                <input type="range" id="lut-black-lift" min="0" max="100" value="0">
+                                <span class="slider-value" id="lut-black-lift-value">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="lut-modal-cancel">取消</button>
+                <button class="btn btn-primary" id="lut-modal-create">快速生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统一导出弹窗 -->
+    <div class="modal-overlay" id="export-modal-overlay">
+        <div class="modal-dialog export-modal-dialog" id="export-modal">
+            <div class="modal-header">
+                <h3>📦 导出文件</h3>
+                <button class="modal-close-btn" id="export-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 模式标签页 -->
+                <div class="export-tabs">
+                    <button class="export-tab active" data-export-mode="gamut" id="export-tab-gamut">色彩空间</button>
+                    <button class="export-tab" data-export-mode="icc" id="export-tab-icc">ICC 校正</button>
+                    <button class="export-tab" data-export-mode="lut" id="export-tab-lut">LUT 校正</button>
+                    <button class="export-tab" data-export-mode="custom" id="export-tab-custom">自定义</button>
+                    <button class="export-tab" data-export-mode="ccmx" id="export-tab-ccmx">CCMX</button>
+                </div>
+
+                <!-- ====== 色彩空间导出面板 ====== -->
+                <div class="export-panel" id="export-panel-gamut">
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📄</span>
+                            <span>输出格式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择导出文件的格式">文件格式:</label>
+                                <select id="gamut-export-format" title="选择导出格式：
+• TI3：ArgyllCMS专用测量数据格式
+• CSV：逗号分隔值，通用表格格式
+• JSON：结构化数据，便于程序读取">
+                                    <option value="ti3" selected>TI3 (ArgyllCMS 测量数据)</option>
+                                    <option value="csv">CSV (通用表格格式)</option>
+                                    <option value="json">JSON (结构化数据)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">⚙️</span>
+                            <span>导出参数</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择要包含在导出文件中的数据类型">包含数据:</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-item" title="导出色域测量数据（RGB色块）">
+                                        <input type="checkbox" id="gamut-export-gamut" checked>
+                                        <span>色域数据</span>
+                                    </label>
+                                    <label class="checkbox-item" title="导出灰阶测量数据（黑白渐变）">
+                                        <input type="checkbox" id="gamut-export-gray" checked>
+                                        <span>灰阶数据</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== ICC 导出面板 ====== -->
+                <div class="export-panel hidden" id="export-panel-icc">
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📄</span>
+                            <span>输出格式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择导出文件的格式">文件格式:</label>
+                                <select id="icc-export-format" title="选择导出格式：
+• ICC Profile：标准显示器校色文件
+• TI3：ArgyllCMS 测量数据格式">
+                                    <option value="icc" selected>ICC Profile (标准校色文件)</option>
+                                    <option value="ti3">TI3 (ArgyllCMS 测量数据)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 测量数据选择 -->
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📊</span>
+                            <span>测量数据</span>
+                            <button class="btn-refresh-cal" id="btn-refresh-cal-list" title="刷新测量数据列表">🔄</button>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择已保存的测量数据用于生成ICC Profile">选择测量数据:</label>
+                                <select id="icc-measurement-select" class="calibration-select" title="从列表中选择之前保存的测量数据">
+                                    <option value="" disabled selected>正在加载...</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label title="勾选后使用当前正在进行或刚完成的测量数据">使用当前测量:</label>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="icc-use-current-measurement" title="勾选后将使用当前测量数据而非历史数据">
+                                    <label for="icc-use-current-measurement" title="使用当前会话中的测量数据">使用当前测量数据</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ICC 参数 -->
+                    <div class="modal-section" id="icc-export-params-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">⚙️</span>
+                            <span>ICC 参数</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row-group">
+                                <div class="form-row">
+                                    <label title="选择ICC Profile的类型，决定色彩转换的精度和方式">Profile 类型:</label>
+                                    <select id="icc-export-profile-type" title="⚠️ 强烈建议使用LUT型！
+• LUT型：使用查找表，精度高，准确还原显示器色彩，保留正确的黑点信息，适合专业色彩工作
+• 矩阵型：使用简单矩阵计算，精度有限，黑点会被强制设为纯黑导致画面偏暗，仅适用于老旧显示器的兼容性测试或OLED等黑点接近纯黑的面板">
+                                        <option value="matrix">矩阵型 (快速，不推荐)</option>
+                                        <option value="lut" selected>LUT型 (精确，推荐)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="设置ICC Profile的计算质量，影响生成时间和精度">质量级别:</label>
+                                    <select id="icc-export-quality" title="选择ICC计算质量：
+• Low (低)：快速生成，精度较低，仅用于快速预览
+• Medium (中)：平衡速度与精度，适合日常使用
+• High (高)：高精度计算，推荐专业用途，约1分钟
+• Ultra (超高)：最高精度，计算时间较长(6分钟+)，仅在需要极致精度时使用">
+                                        <option value="l">Low (低，快速)</option>
+                                        <option value="m">Medium (中，平衡)</option>
+                                        <option value="h" selected>High (高，推荐)</option>
+                                        <option value="u">Ultra (超高，慢)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="设置显示器的目标白点色温">目标白点:</label>
+                                    <select id="icc-export-white-point" title="选择显示器的目标白点：
+• D65 (6500K)：标准白点，sRGB、Rec.709、Adobe RGB使用，推荐大多数用途
+• D50 (5000K)：印刷行业标准，用于打印相关工作流
+• D75 (7500K)：较冷的蓝白色调
+• 原生白点：保持显示器出厂时的白点，不做调整
+• 自定义：手动输入xy色度坐标">
+                                        <option value="D65">D65 (6500K)</option>
+                                        <option value="D50">D50 (5000K)</option>
+                                        <option value="D75">D75 (7500K)</option>
+                                        <option value="native">原生白点</option>
+                                        <option value="custom">自定义 xy</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="设置显示器的Gamma曲线，控制中间调的亮度响应">目标 Gamma:</label>
+                                    <select id="icc-export-gamma" title="选择显示器的Gamma值：
+• 2.2：标准Gamma，sRGB、大多数显示器使用
+• 2.4：BT.1886标准，用于高清视频、广播电视
+• 2.6：较高Gamma，影院环境使用
+• sRGB曲线：符合sRGB标准的特殊曲线，接近2.2但在暗部有轻微不同">
+                                        <option value="2.2">2.2 (sRGB)</option>
+                                        <option value="2.4">2.4 (BT.1886)</option>
+                                        <option value="2.6">2.6 (影院)</option>
+                                        <option value="sRGB">sRGB 曲线</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row hidden" id="icc-export-custom-white-row">
+                                <label title="自定义白点的xy色度坐标">白点坐标:</label>
+                                <div class="input-group">
+                                    <input type="number" id="icc-export-white-x" value="0.3127" min="0" max="1" step="0.0001" placeholder="x" title="白点的x色度坐标 (0-1)">
+                                    <span class="input-separator">,</span>
+                                    <input type="number" id="icc-export-white-y" value="0.3290" min="0" max="1" step="0.0001" placeholder="y" title="白点的y色度坐标 (0-1)">
+                                    <button class="btn btn-small" id="btn-icc-export-fill-white" title="从当前测量的白色数据填入白点坐标">
+                                        <span>从测量填入</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-row-group">
+                                <div class="form-row">
+                                    <label title="黑场补偿：改善暗部细节，但可能在某些显示器上产生色偏">黑场补偿:</label>
+                                    <div class="checkbox-row">
+                                        <input type="checkbox" id="icc-export-black-compensation" checked>
+                                        <label for="icc-export-black-compensation" title="启用后会调整黑点以改善暗部细节和阴影层次，但在某些显示器上可能导致轻微色偏">启用黑场补偿</label>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <label title="勾选后自动将ICC文件安装到系统并应用为显示器默认配置">应用ICC:</label>
+                                    <div class="checkbox-row">
+                                        <input type="checkbox" id="icc-export-apply-profile">
+                                        <label for="icc-export-apply-profile" title="勾选后将ICC文件拷贝到系统ColorSync目录(W)或ColorSync文件夹(M)并立即应用，无需手动安装">应用ICC色彩描述文件</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- TI3 参数（隐藏） -->
+                    <div class="modal-section hidden" id="icc-export-ti3-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">⚙️</span>
+                            <span>TI3 参数</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择要包含在TI3文件中的数据类型">包含数据:</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-item" title="导出色域测量数据（RGB色块）">
+                                        <input type="checkbox" id="icc-export-ti3-gamut" checked>
+                                        <span>色域数据</span>
+                                    </label>
+                                    <label class="checkbox-item" title="导出灰阶测量数据（黑白渐变）">
+                                        <input type="checkbox" id="icc-export-ti3-gray" checked>
+                                        <span>灰阶数据</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== LUT 导出面板 ====== -->
+                <div class="export-panel hidden" id="export-panel-lut">
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📄</span>
+                            <span>输出格式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择导出文件的格式">文件格式:</label>
+                                <select id="lut-export-format" title="选择导出格式：
+• CUBE：Adobe/Resolve 通用格式，兼容性最广
+• 3DL：Autodesk Lustre 格式
+• MGA：Pandora 格式
+• CLF：ACES 规范格式">
+                                    <option value="cube" selected>CUBE (Adobe/Resolve 通用)</option>
+                                    <option value="3dl">3DL (Autodesk Lustre)</option>
+                                    <option value="mga">MGA (Pandora)</option>
+                                    <option value="clf">CLF (ACES 规范)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 导出方式选择 -->
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">🔧</span>
+                            <span>导出方式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择生成LUT的方式">导出方式:</label>
+                                <select id="lut-export-method" title="选择导出方式：
+• 快速：仅进行Gamma校正，秒级生成，适合预览
+• 高级：使用ICC Profile和Collink，专业色彩管理
+  高级模式需要 ArgyllCMS，将先生成 ICC Profile 再生成 3D LUT">
+                                    <option value="fast">快速 (Gamma 校正)</option>
+                                    <option value="advanced" selected>高级 (ICC + Collink)</option>
+                                </select>
+                            </div>
+                            <!-- 高级模式额外参数 -->
+                            <div id="lut-advanced-options" class="advanced-options">
+                                <div class="form-row-group">
+                                    <div class="form-row">
+                                        <label title="选择源色彩空间，LUT将从此色彩空间转换到目标色彩空间">源色域:</label>
+                                        <select id="lut-source-gamut" title="选择源色彩空间：
+• Rec.709：最常用的HD标准
+• DCI-P3：数字影院标准
+• Rec.2020：超高清(UHD)标准
+• sRGB：网络和显示器标准">
+                                            <option value="Rec709">Rec.709 (推荐)</option>
+                                            <option value="P3">DCI-P3</option>
+                                            <option value="Rec2020">Rec.2020</option>
+                                            <option value="sRGB">sRGB</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <label title="渲染意图：定义色彩超出目标色域时如何处理">渲染意图:</label>
+                                        <select id="lut-rendering-intent" title="选择渲染意图：
+• 相对色度：保持色域内颜色准确，色域外颜色裁剪到最近可显示颜色（推荐）
+• 感知：平滑压缩整体颜色以保持色彩关系
+• 饱和度：优先保持饱和度，适合图表等
+• 绝对色度：精确匹配白点，可能产生色偏">
+                                            <option value="r">相对色度 (推荐)</option>
+                                            <option value="p">感知</option>
+                                            <option value="s">饱和度</option>
+                                            <option value="a">绝对色度</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <label></label>
+                                    <div class="checkbox-row">
+                                        <input type="checkbox" id="lut-export-use-bpc" checked>
+                                        <label for="lut-export-use-bpc" title="黑场补偿(BPC)可改善暗部细节，防止黑场被压缩">启用黑场补偿 (BPC)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 校准数据选择 -->
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📊</span>
+                            <span>测量数据</span>
+                            <button class="btn-refresh-cal" id="btn-refresh-cal-list-lut" title="刷新测量数据列表">🔄</button>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择已保存的测量数据用于生成3D LUT">选择测量数据:</label>
+                                <select id="lut-measurement-select" class="calibration-select" title="从列表中选择之前保存的测量数据">
+                                    <option value="" disabled selected>正在加载...</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label title="勾选后使用当前正在进行或刚完成的测量数据">使用当前测量:</label>
+                                <div class="checkbox-row">
+                                    <input type="checkbox" id="lut-use-current-measurement" title="勾选后将使用当前测量数据而非历史数据">
+                                    <label for="lut-use-current-measurement" title="使用当前会话中的测量数据">使用当前测量数据</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">⚙️</span>
+                            <span>LUT 参数</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row-group">
+                                <div class="form-row">
+                                    <label title="3D LUT的网格尺寸，数值越大精度越高但文件越大">LUT 尺寸:</label>
+                                    <select id="lut-export-size" title="选择LUT网格尺寸：
+• 17³：快速生成，适合预览
+• 33³：标准尺寸，精度与文件大小平衡（推荐）
+• 65³：高精度，专业用途
+• 129³：超高精度，文件很大">
+                                        <option value="17">17³ (快速)</option>
+                                        <option value="33" selected>33³ (标准)</option>
+                                        <option value="65">65³ (精细)</option>
+                                        <option value="129">129³ (超精细)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="设置3D LUT的计算质量，影响生成时间和精度">质量级别:</label>
+                                    <select id="lut-export-quality" title="选择3D LUT计算质量：
+• Low (低)：快速生成
+• Medium (中)：平衡速度与精度
+• High (高)：高精度计算，推荐
+• Ultra (超高)：最高精度，计算时间长">
+                                        <option value="l">Low (低)</option>
+                                        <option value="m">Medium (中)</option>
+                                        <option value="h" selected>High (高)</option>
+                                        <option value="u">Ultra (超高)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="选择目标色彩空间，LUT将把源色彩空间转换到此色彩空间">目标色域:</label>
+                                    <select id="lut-export-gamut" title="选择目标色彩空间：
+• sRGB：网络和显示器标准
+• Rec.709：HD视频标准
+• DCI-P3：数字影院标准
+• Rec.2020：超高清(UHD)标准
+• Adobe RGB：专业摄影标准">
+                                        <option value="sRGB">sRGB</option>
+                                        <option value="Rec709">Rec.709</option>
+                                        <option value="DCI-P3">DCI-P3</option>
+                                        <option value="Rec2020">Rec.2020</option>
+                                        <option value="AdobeRGB">Adobe RGB</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="选择目标Gamma曲线，控制中间调的亮度响应">目标 Gamma:</label>
+                                    <select id="lut-export-gamma" title="选择目标Gamma值：
+• 2.2：标准Gamma，sRGB使用
+• 2.4：BT.1886标准，用于HD视频
+• 2.6：较高Gamma，影院环境
+• sRGB曲线：符合sRGB标准
+• PQ/HLG：HDR曲线">
+                                        <option value="2.2">2.2 (sRGB)</option>
+                                        <option value="2.4">2.4 (BT.1886)</option>
+                                        <option value="2.6">2.6 (影院)</option>
+                                        <option value="sRGB">sRGB 曲线</option>
+                                        <option value="PQ">ST 2084 PQ (HDR)</option>
+                                        <option value="HLG">HLG (HDR)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row-group">
+                                <div class="form-row">
+                                    <label title="选择3D LUT的插值算法，影响色彩过渡的平滑度">插值方式:</label>
+                                    <select id="lut-export-interpolation" title="选择插值方式：
+• 三线性插值：速度快，标准算法
+• 四面体插值：精度更高，色彩过渡更平滑">
+                                        <option value="trilinear">三线性插值</option>
+                                        <option value="tetrahedral">四面体插值</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label title="选择输入信号的数值范围">输入范围:</label>
+                                    <select id="lut-export-input-range" title="选择输入范围：
+• Full Range：0-255，计算机标准
+• Video Range：16-235，视频标准（限流）">
+                                        <option value="full">Full Range (0-255)</option>
+                                        <option value="video">Video Range (16-235)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== 自定义颜色导出面板 ====== -->
+                <div class="export-panel hidden" id="export-panel-custom">
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📄</span>
+                            <span>输出格式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择导出文件的格式">文件格式:</label>
+                                <select id="custom-export-format" title="选择导出格式：
+• CSV：逗号分隔值，通用表格格式
+• JSON：结构化数据，便于程序读取
+• TI3：ArgyllCMS 测量数据格式">
+                                    <option value="csv" selected>CSV (通用表格格式)</option>
+                                    <option value="json">JSON (结构化数据)</option>
+                                    <option value="ti3">TI3 (ArgyllCMS 测量数据)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== CCMX 导出面板 ====== -->
+                <div class="export-panel hidden" id="export-panel-ccmx">
+                    <div class="modal-section">
+                        <div class="modal-section-header">
+                            <span class="modal-section-icon">📄</span>
+                            <span>输出格式</span>
+                        </div>
+                        <div class="modal-section-content">
+                            <div class="form-row">
+                                <label title="选择导出文件的格式">文件格式:</label>
+                                <select id="ccmx-export-format" title="选择导出格式：
+• CCMX：色彩校正矩阵文件
+• CSV：测量数据表格格式">
+                                    <option value="ccmx" selected>CCMX (色彩校正矩阵)</option>
+                                    <option value="csv">CSV (测量数据表格)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件保存路径（通用） -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">📁</span>
+                        <span>保存路径</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="file-path-row">
+                            <input type="text" id="export-file-path" class="file-path-input" placeholder="选择保存路径或直接输入完整文件路径..." title="文件保存的完整路径，包含文件名和扩展名，留空则使用默认目录和文件名">
+                            <button class="btn btn-secondary btn-sm" id="export-browse-btn" title="点击选择文件保存位置">浏览...</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 导出状态提示区域 -->
+            <div class="export-status-area" id="export-status-area" style="display: none;">
+                <div class="export-status-icon">⏳</div>
+                <div class="export-status-content">
+                    <div class="export-status-title" id="export-status-title">正在制作文件...</div>
+                    <div class="export-status-message" id="export-status-message">这可能需要几分钟时间，请耐心等待</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="export-modal-cancel">取消</button>
+                <button class="btn btn-primary" id="export-modal-create">导出文件</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 偏好设置弹窗 -->
+    <div class="modal-overlay" id="preferences-modal-overlay">
+        <div class="modal-dialog" id="preferences-modal">
+            <div class="modal-header">
+                <h3>偏好设置</h3>
+                <button class="modal-close" id="preferences-modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 通用 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">🧭</span>
+                        <span>通用</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label>界面语言:</label>
+                            <select id="prefs-language">
+                                <option value="zh-CN" selected>简体中文</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" title="启动软件时在后台自动连接探头（首次约需 30-60 秒），&#10;到达探头步骤时通常已连接好。关闭后需在探头步骤手动点击连接。">
+                                <input type="checkbox" id="prefs-auto-connect-probe" checked>
+                                <span class="checkbox-text">启动时自动连接探头</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 测量默认参数（集中管理：修改后同步到左面板与向导） -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">🎯</span>
+                        <span>测量默认参数</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label>探头类型:</label>
+                            <select id="prefs-probe-type">
+                                <option value="i1d3" selected>i1 Display Pro</option>
+                                <option value="i1pro2">i1 Pro 2</option>
+                                <option value="i1pro3">i1 Pro 3</option>
+                                <option value="spydx">SpyderX</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>显示器技术:</label>
+                            <select id="prefs-display-type">
+                                <option value="l" selected>LCD (普通液晶)</option>
+                                <option value="o">OLED / 等离子</option>
+                                <option value="c">CRT</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>测量延迟:</label>
+                            <input type="number" id="prefs-measure-delay" value="500" min="0" max="10000" step="100"> ms
+                        </div>
+                        <div class="form-row">
+                            <label>重复测量次数:</label>
+                            <input type="number" id="prefs-measure-repeat-count" value="1" min="1" max="10">
+                        </div>
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" title="低亮度色块自动增加采样次数以提高暗部精度">
+                                <input type="checkbox" id="prefs-dark-sample-enabled">
+                                <span class="checkbox-text">暗部多次采样</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 界面外观 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">🌗</span>
+                        <span>界面外观</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" title="进一步压暗界面背景、降低文字亮度与主色饱和度&#10;&#10;适合暗房校色环境，减少 UI 亮光对人眼色觉适应的干扰">
+                                <input type="checkbox" id="prefs-dark-room">
+                                <span class="checkbox-text">暗房模式</span>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>字体大小:</label>
+                            <select id="prefs-font-scale">
+                                <option value="normal" selected>标准</option>
+                                <option value="large">大 (115%)</option>
+                                <option value="xlarge">特大 (130%)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <!-- 自动保存设置 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">💾</span>
+                        <span>自动保存</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="prefs-auto-save-enabled" checked>
+                                <span>测量完成后自动保存</span>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>保存目录:</label>
+                            <input type="text" id="prefs-auto-save-path" value="measurements/auto_save" placeholder="留空使用默认目录">
+                            <button class="btn btn-secondary btn-sm" id="prefs-browse-auto-save">浏览...</button>
+                        </div>
+                        <div class="form-row hint-text">
+                            自动保存格式: measurements/auto_save/YYYY-MM-DD/HHMMSS_模式.json + .ti3
+                        </div>
+                    </div>
+                </div>
+                <!-- Web测量服务器设置 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">🌐</span>
+                        <span>Web测量服务器</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row">
+                            <label class="checkbox-label" title="开启后，同一局域网内的设备可用浏览器打开下方地址进行测量">
+                                <input type="checkbox" id="prefs-web-server-enabled">
+                                <span class="checkbox-text">启用 Web 测量服务</span>
+                            </label>
+                            <span class="web-server-state" id="prefs-web-server-state">未启动</span>
+                        </div>
+                        <div class="form-row">
+                            <label>端口:</label>
+                            <input type="number" id="prefs-web-server-port" value="8080" min="1024" max="65535" placeholder="8080">
+                        </div>
+                        <div class="form-row">
+                            <label>服务地址:</label>
+                            <input type="text" id="prefs-web-server-url" readonly placeholder="启动服务后显示">
+                            <button class="btn btn-secondary btn-sm" id="prefs-copy-web-url" disabled>复制</button>
+                        </div>
+                        <div class="form-row hint-text">
+                            启动后可在浏览器中访问 http://[IP]:[端口] 进行测量（受系统ICC影响）
+                        </div>
+                    </div>
+                </div>
+                <!-- 色彩管理高级选项 -->
+                <div class="modal-section">
+                    <div class="modal-section-header">
+                        <span class="modal-section-icon">🎨</span>
+                        <span>色彩管理高级选项</span>
+                    </div>
+                    <div class="modal-section-content">
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" title="测量前清除显卡LUT（VCGT），确保测量显示器原生状态&#10;&#10;适用场景：&#10;• 使用Qt测量窗口测量：勾选此项即可&#10;• 使用Web测量服务器测量：建议同时勾选Null Profile方案&#10;&#10;作用：清除显卡1D LUT，所有应用输出都会变成线性">
+                                <input type="checkbox" id="prefs-auto-clear-lut" checked>
+                                <span class="checkbox-text">自动清除系统 ICC</span>
+                            </label>
+                            <span class="hint-text">清除显卡VCGT，测量显示器原生状态</span>
+                        </div>
+                        <div class="form-row checkbox-row">
+                            <label class="checkbox-label" title="挂载线性ICC到系统，让浏览器等其他应用绕过系统ICC&#10;&#10;适用场景：&#10;• 仅使用Web测量服务器测量时勾选&#10;• 使用Qt测量窗口测量时无需勾选（Qt窗口本身绕过ICC）&#10;&#10;注意：必须在"自动清除系统ICC"勾选后才生效">
+                                <input type="checkbox" id="prefs-use-null-profile">
+                                <span class="checkbox-text">使用 Null Profile 方案</span>
+                            </label>
+                            <span class="hint-text">仅Web测量时需要，让浏览器绕过系统ICC</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="preferences-modal-ok">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用文档弹窗 -->
+    <div class="modal-overlay" id="docs-modal-overlay">
+        <div class="modal-dialog docs-modal" id="docs-modal">
+            <div class="modal-header">
+                <div class="docs-header-left">
+                    <h3>使用文档</h3>
+                    <select id="docs-lang-select" class="docs-lang-select" title="切换文档语言"></select>
+                </div>
+                <button class="modal-close-btn" id="docs-modal-close">×</button>
+            </div>
+            <div class="docs-layout">
+                <aside class="docs-sidebar" id="docs-sidebar"></aside>
+                <div class="docs-content" id="docs-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QWebChannel 支持 -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <!-- 国际化：i18n 核心需最先加载，语言包随后注册 -->
+    <script src="js/i18n.js?v=1"></script>
+    <script src="js/locales/zh-CN.js?v=1"></script>
+    <script src="js/locales/en.js?v=1"></script>
+    <script src="js/charts.js?v=4"></script>
+    <script src="js/docs-content.js?v=1"></script>
+    <script src="js/preflight-i18n.js?v=1"></script>
+    <script src="js/main.js?v=14"></script>
+</body>
+</html>

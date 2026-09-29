@@ -1,0 +1,41 @@
+# Fixture: spotread 成功测量输出
+# 来源: 手写，基于 ArgyllCMS spotread 实际输出格式
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -e -d l -c 1
+
+# ========== 启动阶段 ==========
+# 注意: stderr=subprocess.STDOUT，所有输出合并
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+Setting up instrument ...
+Found instrument 'hid:111 (i1 Display Pro, ColorMunki Display)'
+Serial Number: XXXXXXXX
+Using spectral sample file: /path/to/ArgyllCMS/ref/i1d3ss.ccss
+Place instrument on measurement area ...
+Hit any key to continue:
+
+# ========== 测量阶段 ==========
+# 用户发送换行符触发测量
+# spotread 输出测量结果
+
+Result is XYZ: 0.033364 0.029912 0.062078, D50 Lab: 12.34 -3.45 6.78
+
+# ========== 退出阶段 ==========
+# 用户发送 'q' 退出
+Instrument can be removed from measurement area.
+
+# ========== 预期解析结果 ==========
+# 正则匹配: XYZ_PATTERN = r'Result is XYZ:\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)'
+# 提取值: X=0.033364, Y=0.029912, Z=0.062078
+# 转换为 xyY:
+#   x = X / (X+Y+Z) = 0.033364 / 0.125354 = 0.2662
+#   y = Y / (X+Y+Z) = 0.029912 / 0.125354 = 0.2387
+#   Y = 0.029912 (保持不变)
+# 最终结果: (x=0.2662, y=0.2387, Y=0.029912)
+
+# ========== 关键检测点 ==========
+# - "Result is XYZ:" 表示测量成功
+# - XYZ 值为空格分隔的三个浮点数
+# - D50 Lab 值在 XYZ 之后，可选
+# - "Instrument can be removed" 表示正常退出

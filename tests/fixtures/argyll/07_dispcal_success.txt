@@ -1,0 +1,46 @@
+# Fixture: dispcal 校准成功完成
+# 来源: 手写，基于 ArgyllCMS dispcal 校准成功输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: dispcal -v -d 1 -c 1 -q m -t 6500 -g 2.2 output
+
+# ========== 校准完成输出 ==========
+ArgyllCMS dispcal - Display calibration utility
+Version 2.2.1
+
+Display 1: 'LCD Monitor' at 1920x1080
+Instrument: 'i1 Display Pro' at port 1
+
+Setting up instrument ...
+Serial Number: XXXXXXXX
+Commencing display calibration ...
+Reading patch 1 of 21 ...
+Reading patch 2 of 21 ...
+...
+Reading patch 21 of 21 ...
+
+Computing calibration curves ...
+Creating VCGT (Video Card Gamma Table) ...
+
+# ========== 校准文件写入 ==========
+Written calibration file 'output.cal'
+
+# ========== 校准结果摘要 ==========
+# dispcal 会输出校准后的参数
+
+Target white point: 6500K (D65)
+Target gamma: 2.2
+Measured white: XYZ = 95.32 100.00 108.89, Y = 100.00 cd/m²
+
+# ========== 仪器可移除提示 ==========
+Instrument can be removed from test window.
+
+# ========== 预期解析结果 ==========
+# 成功检测点:
+# - "Written calibration file" + ".cal" -> 校准文件已生成
+# - 返回码 = 0
+# - 文件存在: output.cal
+
+# ========== 校准结果解析 ==========
+# 白点测量输出格式:
+# "Measured white: XYZ = X Y Z, Y = brightness cd/m²"
+# 正则: r'Measured white: XYZ = ([\d.]+) ([\d.]+) ([\d.]+), Y = ([\d.]+) cd/m²'

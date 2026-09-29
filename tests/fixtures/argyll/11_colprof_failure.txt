@@ -1,0 +1,47 @@
+# Fixture: colprof 生成 ICC Profile 失败
+# 来源: 手写，基于 ArgyllCMS colprof 失败输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: colprof -v -qm -D "Display Profile" -al output
+
+# ========== 失败场景 1: 输入文件不存在 ==========
+ArgyllCMS colprof - Profile generator
+Version 2.2.1
+
+Error: Can't open input file 'output.ti3' - No such file or directory
+colprof: Fatal error encountered
+
+# 返回码: 1
+
+# ========== 失败场景 2: 测量数据无效 ==========
+ArgyllCMS colprof - Profile generator
+Version 2.2.1
+
+Reading measurement data from 'output.ti3' ...
+Error: Input file contains no valid measurement data
+colprof: Fatal error encountered
+
+# 返回码: 1
+
+# ========== 失败场景 3: 内存不足 ==========
+ArgyllCMS colprof - Profile generator
+Version 2.2.1
+
+Reading measurement data from 'output.ti3' ...
+Loaded 4096 measurement points
+
+Building forward lookup tables ...
+Error: Out of memory - cannot allocate lookup table
+colprof: Fatal error encountered
+
+# 返回码: 1
+
+# ========== 预期解析结果 ==========
+# 失败检测:
+# - "Error:" 关键词 -> 错误消息
+# - "Fatal error encountered" -> 严重错误
+# - 返回码 != 0
+
+# 错误类型映射:
+# - "Can't open input file" -> 文件不存在
+# - "no valid measurement data" -> 数据格式错误
+# - "Out of memory" -> 系统资源不足

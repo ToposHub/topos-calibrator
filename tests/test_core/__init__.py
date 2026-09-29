@@ -1,0 +1,1 @@
+"""Tests for the core module (state machine and events)."""

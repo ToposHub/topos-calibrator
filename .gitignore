@@ -1,0 +1,45 @@
+# 忽略大数据目录
+.images_cache/
+luts/
+models/
+
+# 忽略项目特定目录
+ArgyllCMS/
+measurements/
+
+# 忽略 Mac 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# 忽略 Python 缓存和环境
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+.cache/
+
+# 忽略 IDE 和编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 忽略测试和覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# 忽略日志文件
+*.log
+logs/
+# 忽略 ZCode 工具会话数据
+.zcode/

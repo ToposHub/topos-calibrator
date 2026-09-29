@@ -1,0 +1,44 @@
+# Fixture: colprof 生成 ICC Profile 成功完成
+# 来源: 手写，基于 ArgyllCMS colprof 成功输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: colprof -v -qm -D "Display Profile" -al -yc output
+
+# ========== colprof 成功输出 ==========
+ArgyllCMS colprof - Profile generator
+Version 2.2.1
+
+Reading measurement data from 'output.ti3' ...
+Loaded 1024 measurement points
+
+Building forward lookup tables ...
+Computing inverse lookup tables ...
+Creating A2B0 table ...
+Creating B2A0 table ...
+Smoothing curves ...
+Writing ICC profile ...
+
+# ========== 完成输出 ==========
+Created profile 'output.icc'
+
+# ========== Profile 信息摘要 ==========
+Profile description: 'Display Profile'
+Profile type: Lab output profile
+Profile class: Display
+PCS: D50 Lab
+
+# ========== ICC 标签信息 ==========
+Tags included:
+- desc: Profile description
+- wtpt: White point
+- rXYZ, gXYZ, bXYZ: Colorant XYZ
+- rTRC, gTRC, bTRC: Tone reproduction curves
+- A2B0: Device to PCS lookup table
+- B2A0: PCS to Device lookup table
+- (no VCGT due to -yc flag)
+
+# ========== 预期解析结果 ==========
+# 成功检测:
+# - "Created profile" + ".icc" -> ICC 文件已生成
+# - 返回码 = 0
+# - 文件存在: output.icc
+# - 文件大小 > 0 (通常几 KB 到几百 KB)

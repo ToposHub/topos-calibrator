@@ -1,0 +1,38 @@
+# Fixture: spotread 柔光罩未移除错误
+# 来源: 手写，基于 ArgyllCMS spotread 柔光罩错误实际输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -e -d l -c 1
+
+# ========== 启动阶段 ==========
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+Setting up instrument ...
+Found instrument 'hid:111 (i1 Display Pro, ColorMunki Display)'
+Serial Number: XXXXXXXX
+Place instrument on measurement area ...
+Hit any key to continue:
+
+# ========== 柔光罩错误 ==========
+# i1 Display Pro 等色度计有柔光罩（ambient filter）
+# 用于环境光测量，但显示测量时需要移除
+# 如果未移除，spotread 会报错
+
+The instrument sensor is being in the wrong position,
+or the ambient filter should be removed.
+
+# ========== 预期解析结果 ==========
+# 错误关键词检测:
+# - "ambient filter should be removed" -> 柔光罩错误
+# - "sensor being in the wrong position" -> 传感器位置错误
+# - 应触发 SPOTREAD_ERROR_KEYWORDS 匹配
+# - 应触发 ERROR_MESSAGE_MAP 映射
+
+# ========== 用户提示建议 ==========
+# ERROR_MESSAGE_MAP['ambient filter should be removed'] =
+#   '柔光罩未移除，请确保柔光罩已打开或移除后再进行测量'
+
+# ========== 关键检测点 ==========
+# - 这是硬件状态错误，需要用户干预
+# - 不是 USB 断开，不需要自动断开连接
+# - 但需要暂停测量，等待用户处理

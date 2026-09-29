@@ -1,0 +1,42 @@
+# Fixture: spotread 仪器未找到
+# 来源: 手写，基于 ArgyllCMS spotread 设备未找到输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -e -d l -c 1
+
+# ========== 启动阶段 - 无设备 ==========
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+Setting up instrument ...
+
+# ========== 设备未找到 ==========
+# 可能原因:
+# 1. 探头未连接
+# 2. USB 驱动问题
+# 3. 其他软件占用探头
+# 4. 权限问题
+
+No instrument found
+
+# 或者使用 -c 参数指定设备时:
+Instrument at port 1 not found
+
+# ========== 进程立即退出 ==========
+# spotread 找不到设备时会立即退出
+# 返回码通常为 1
+
+# ========== 预期解析结果 ==========
+# 错误关键词检测:
+# - "No instrument found" -> 仪器未找到
+# - "Instrument at port X not found" -> 指定端口设备不存在
+# - 应触发 SPOTREAD_ERROR_KEYWORDS 匹配
+# - 应触发 USB_DISCONNECT_KEYWORDS 匹配
+
+# ========== 用户提示建议 ==========
+# ERROR_MESSAGE_MAP['no instrument found'] =
+#   '未检测到探头，请检查探头连接'
+
+# ========== 关键检测点 ==========
+# - 这是连接阶段错误，不是测量阶段
+# - 需要检查 USB 连接和驱动状态
+# - macOS 可能需要清理 XRiteDevice 等进程

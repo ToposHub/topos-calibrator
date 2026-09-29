@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{REPORT_TITLE}} - {{REPORT_ID}}</title>
+    <!-- 内嵌样式，支持离线打开 -->
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                         "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* 标题样式 */
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header .meta {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* 总体状态 */
+        .overall-status {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .overall-status.pass {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .overall-status.warn {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+        
+        .overall-status.fail {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        
+        .overall-status h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .overall-status .counts {
+            font-size: 16px;
+        }
+        
+        /* 分区样式 */
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #007bff;
+            font-size: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+            margin-top: 15px;
+        }
+        
+        /* 信息网格 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .info-item label {
+            color: #666;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .info-item .value {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 数值卡片 */
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .metric-card .unit {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .metric-card .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 验证结果表格 */
+        .validation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .validation-table th,
+        .validation-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .validation-table th {
+            background: #007bff;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .validation-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .validation-pass {
+            background: rgba(40, 167, 69, 0.1);
+        }
+        
+        .validation-warn {
+            background: rgba(255, 193, 7, 0.1);
+        }
+        
+        .validation-fail {
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        /* 状态徽章 */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-badge.pass {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-badge.warn {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .status-badge.fail {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-badge.not_tested {
+            background: #6c757d;
+            color: white;
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            height: 350px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        .chart-placeholder {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* 简易图表（无 ECharts 时的备用显示） */
+        .simple-chart {
+            padding: 20px;
+        }
+        
+        .gamma-plot {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .gamma-row {
+            display: flex;
+            align-items: center;
+            height: 20px;
+        }
+        
+        .gamma-label {
+            width: 60px;
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            padding-right: 10px;
+        }
+        
+        .gamma-bar-container {
+            flex: 1;
+            background: #e9ecef;
+            border-radius: 2px;
+            height: 16px;
+            position: relative;
+        }
+        
+        .gamma-bar-measured {
+            background: #007bff;
+            height: 100%;
+            border-radius: 2px;
+        }
+        
+        .gamma-bar-target {
+            background: transparent;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-left: 2px dashed #28a745;
+        }
+        
+        /* 色域图简易显示 */
+        .gamut-plot {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+        }
+        
+        .gamut-point {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .gamut-point.measured {
+            background: #007bff;
+            color: white;
+        }
+        
+        .gamut-point.standard {
+            background: #28a745;
+            color: white;
+        }
+        
+        .gamut-point.white {
+            background: #dc3545;
+            color: white;
+        }
+        
+        /* Delta E 分布简易显示 */
+        .delta-e-plot {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 20px;
+        }
+        
+        .delta-e-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        .delta-e-bar-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .delta-e-bar-count {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .delta-e-bar.color-1 { color: #28a745; }
+        .delta-e-bar.color-2 { color: #5cb85c; }
+        .delta-e-bar.color-3 { color: #ffc107; }
+        .delta-e-bar.color-4 { color: #fd7e14; }
+        .delta-e-bar.color-5 { color: #dc3545; }
+        
+        /* 数据表格 */
+        .data-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .data-section h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .raw-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            max-height: 300px;
+            white-space: pre-wrap;
+        }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            margin-top: 30px;
+        }
+        
+        /* 打印样式 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .report-container {
+                box-shadow: none;
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .raw-data {
+                display: none;
+            }
+            
+            .metric-card {
+                background: #f8f9fa;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .report-container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .metric-card .value {
+                font-size: 24px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .validation-table {
+                font-size: 12px;
+            }
+            
+            .validation-table th,
+            .validation-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- 标题 -->
+        <div class="header">
+            <h1>{{REPORT_TITLE}}</h1>
+            <div class="meta">
+                报告编号: {{REPORT_ID}} | 
+                生成时间: {{GENERATED_AT}} |
+                目标标准: {{TARGET_STANDARD}}
+            </div>
+        </div>
+        
+        <!-- 总体状态 -->
+        <div class="overall-status {{OVERALL_STATUS_CLASS}}" style="{{OVERALL_STATUS_STYLE}}">
+            <h2>验证结果: {{OVERALL_STATUS_TEXT}}</h2>
+            <div class="counts">
+                合格: {{PASS_COUNT}} | 警告: {{WARN_COUNT}} | 不合格: {{FAIL_COUNT}}
+            </div>
+        </div>
+        
+        <!-- 目标标准 -->
+        <div class="section">
+            <h2>1. 目标标准</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>色域标准</label>
+                    <div class="value">{{TARGET_STANDARD}}</div>
+                </div>
+                <div class="info-item">
+                    <label>Gamma 目标</label>
+                    <div class="value">{{TARGET_GAMMA}}</div>
+                </div>
+                <div class="info-item">
+                    <label>白点目标</label>
+                    <div class="value">{{TARGET_WHITE_POINT}}</div>
+                </div>
+                <div class="info-item">
+                    <label>报告类型</label>
+                    <div class="value">{{REPORT_TYPE}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 设备信息 -->
+        <div class="section">
+            <h2>2. 设备信息</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>探头</label>
+                    <div class="value">{{PROBE}}</div>
+                </div>
+                <div class="info-item">
+                    <label>探头序列号</label>
+                    <div class="value">{{PROBE_SERIAL}}</div>
+                </div>
+                <div class="info-item">
+                    <label>显示器型号</label>
+                    <div class="value">{{DISPLAY_MODEL}}</div>
+                </div>
+                <div class="info-item">
+                    <label>显示器名称</label>
+                    <div class="value">{{DISPLAY_NAME}}</div>
+                </div>
+                <div class="info-item">
+                    <label>显示器类型</label>
+                    <div class="value">{{DISPLAY_TYPE}}</div>
+                </div>
+                <div class="info-item">
+                    <label>分辨率</label>
+                    <div class="value">{{DISPLAY_RESOLUTION}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 环境条件 -->
+        <div class="section">
+            <h2>3. 环境条件</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>操作系统</label>
+                    <div class="value">{{OS}}</div>
+                </div>
+                <div class="info-item">
+                    <label>ArgyllCMS 版本</label>
+                    <div class="value">{{ARGYLL_VERSION}}</div>
+                </div>
+                <div class="info-item">
+                    <label>测量时间</label>
+                    <div class="value">{{MEASUREMENT_TIME}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 校正文件 -->
+        <div class="section">
+            <h2>4. 校正文件</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>校正文件</label>
+                    <div class="value">{{CORRECTION_FILE}}</div>
+                </div>
+                <div class="info-item">
+                    <label>校正类型</label>
+                    <div class="value">{{CORRECTION_TYPE}}</div>
+                </div>
+                <div class="info-item">
+                    <label>校正 Hash</label>
+                    <div class="value">{{CORRECTION_HASH}}</div>
+                </div>
+                <div class="info-item">
+                    <label>目标探头</label>
+                    <div class="value">{{CORRECTION_INSTRUMENT}}</div>
+                </div>
+                <div class="info-item">
+                    <label>目标显示技术</label>
+                    <div class="value">{{CORRECTION_TECHNOLOGY}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 白点测量 -->
+        <div class="section">
+            <h2>5. 白点测量</h2>
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <div class="value">{{WHITE_POINT_CCT}}</div>
+                    <div class="unit">K</div>
+                    <div class="label">相关色温</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{WHITE_POINT_DUV}}</div>
+                    <div class="unit"></div>
+                    <div class="label">Duv 偏移</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{WHITE_POINT_DELTA_E}}</div>
+                    <div class="unit">ΔE</div>
+                    <div class="label">白点偏差</div>
+                </div>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>CIE xy 坐标</label>
+                    <div class="value">({{WHITE_POINT_X}}, {{WHITE_POINT_Y}})</div>
+                </div>
+                <div class="info-item">
+                    <label>亮度</label>
+                    <div class="value">{{WHITE_POINT_Y_VALUE}} cd/m²</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 亮度与对比度 -->
+        <div class="section">
+            <h2>6. 亮度与对比度</h2>
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <div class="value">{{MAX_BRIGHTNESS}}</div>
+                    <div class="unit">cd/m²</div>
+                    <div class="label">峰值亮度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{MIN_BRIGHTNESS}}</div>
+                    <div class="unit">cd/m²</div>
+                    <div class="label">黑场亮度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{CONTRAST_RATIO}}</div>
+                    <div class="unit">:1</div>
+                    <div class="label">对比度</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gamma/EOTF -->
+        <div class="section">
+            <h2>7. Gamma/EOTF 分析</h2>
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <div class="value">{{MEASURED_GAMMA}}</div>
+                    <div class="unit"></div>
+                    <div class="label">测量 Gamma</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{GAMMA_DEVIATION}}</div>
+                    <div class="unit"></div>
+                    <div class="label">与目标偏差</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{GAMMA_R_SQUARED}}</div>
+                    <div class="unit">R²</div>
+                    <div class="label">拟合优度</div>
+                </div>
+            </div>
+            
+            <h3>EOTF 曲线</h3>
+            <div class="chart-container" id="gamma-chart">
+                <!-- 简易图表备用显示 -->
+                <div class="chart-placeholder">
+                    Gamma 曲线图表
+                </div>
+            </div>
+        </div>
+        
+        <!-- 色域覆盖 -->
+        <div class="section">
+            <h2>8. 色域覆盖</h2>
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <div class="value">{{GAMUT_COVERAGE}}</div>
+                    <div class="unit">%</div>
+                    <div class="label">覆盖率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{GAMUT_AREA_RATIO}}</div>
+                    <div class="unit">%</div>
+                    <div class="label">面积比</div>
+                </div>
+            </div>
+            
+            <h3>色域三角形</h3>
+            <div class="chart-container" id="gamut-chart">
+                <div class="chart-placeholder">
+                    色域三角形图表
+                </div>
+            </div>
+            
+            <!-- 色域坐标简易显示 -->
+            <div class="simple-chart gamut-plot">
+                <div class="gamut-point measured">红: ({{GAMUT_RED_X}}, {{GAMUT_RED_Y}})</div>
+                <div class="gamut-point measured">绿: ({{GAMUT_GREEN_X}}, {{GAMUT_GREEN_Y}})</div>
+                <div class="gamut-point measured">蓝: ({{GAMUT_BLUE_X}}, {{GAMUT_BLUE_Y}})</div>
+                <div class="gamut-point white">白: ({{WHITE_POINT_X}}, {{WHITE_POINT_Y}})</div>
+            </div>
+        </div>
+        
+        <!-- Delta E 统计 -->
+        <div class="section">
+            <h2>9. Delta E 统计</h2>
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <div class="value">{{DELTA_E_AVG}}</div>
+                    <div class="unit">ΔE</div>
+                    <div class="label">平均值</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{DELTA_E_MAX}}</div>
+                    <div class="unit">ΔE</div>
+                    <div class="label">最大值</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{DELTA_E_95TH}}</div>
+                    <div class="unit">ΔE</div>
+                    <div class="label">95分位</div>
+                </div>
+                <div class="metric-card">
+                    <div class="value">{{DELTA_E_STD}}</div>
+                    <div class="unit">ΔE</div>
+                    <div class="label">标准差</div>
+                </div>
+            </div>
+            
+            <h3>Delta E 分布</h3>
+            <div class="chart-container" id="delta-e-chart">
+                <div class="chart-placeholder">
+                    Delta E 分布图表
+                </div>
+            </div>
+            
+            <!-- Delta E 分布简易显示 -->
+            <div class="simple-chart delta-e-plot">
+                <div class="delta-e-bar color-1">
+                    <div class="delta-e-bar-label">&lt;1</div>
+                    <div class="delta-e-bar-count">{{DELTA_E_DIST_LT_1}}</div>
+                </div>
+                <div class="delta-e-bar color-2">
+                    <div class="delta-e-bar-label">1-2</div>
+                    <div class="delta-e-bar-count">{{DELTA_E_DIST_1_2}}</div>
+                </div>
+                <div class="delta-e-bar color-3">
+                    <div class="delta-e-bar-label">2-3</div>
+                    <div class="delta-e-bar-count">{{DELTA_E_DIST_2_3}}</div>
+                </div>
+                <div class="delta-e-bar color-4">
+                    <div class="delta-e-bar-label">3-4</div>
+                    <div class="delta-e-bar-count">{{DELTA_E_DIST_3_4}}</div>
+                </div>
+                <div class="delta-e-bar color-5">
+                    <div class="delta-e-bar-label">&gt;4</div>
+                    <div class="delta-e-bar-count">{{DELTA_E_DIST_GT_4}}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 验证结果详情 -->
+        <div class="section">
+            <h2>10. 验证结果详情</h2>
+            <table class="validation-table">
+                <thead>
+                    <tr>
+                        <th>指标</th>
+                        <th>测量值</th>
+                        <th>目标值</th>
+                        <th>偏差</th>
+                        <th>状态</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody id="validation-results">
+                    {{VALIDATION_RESULTS}}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 备注 -->
+        <div class="section">
+            <h2>11. 备注</h2>
+            <p style="background: #f8f9fa; padding: 15px; border-radius: 4px;">{{NOTES}}</p>
+        </div>
+        
+        <!-- 原始数据 -->
+        <div class="data-section">
+            <h3>原始数据 (JSON)</h3>
+            <details>
+                <summary style="cursor: pointer; color: #007bff;">点击展开/收起原始数据</summary>
+                <div class="raw-data" id="raw-data">{{REPORT_DATA_JSON}}</div>
+            </details>
+        </div>
+        
+        <!-- 页脚 -->
+        <div class="footer">
+            本报告由 <strong>Topos Calibrator</strong> 自动生成 | 
+            报告可离线打开，无需外部依赖 | 
+            如需 PDF，请使用浏览器打印功能 (Ctrl/Cmd + P) |
+            生成时间: {{GENERATED_AT}}
+        </div>
+    </div>
+    
+    <!-- 内嵌 ECharts（可选，用于动态渲染图表） -->
+    <!-- 如果需要动态图表，可以在使用时引入 ECharts CDN -->
+    <script>
+        // 图表数据（由 Python 渲染时注入）
+        const reportData = {
+            gammaChart: {{GAMMA_CHART_DATA}},
+            gamutChart: {{GAMUT_CHART_DATA}},
+            deltaEChart: {{DELTA_E_CHART_DATA}}
+        };
+        
+        // 如果 ECharts 可用，渲染图表
+        if (typeof echarts !== 'undefined') {
+            // Gamma 曲线图
+            const gammaChartEl = document.getElementById('gamma-chart');
+            if (gammaChartEl && reportData.gammaChart.input.length > 0) {
+                const gammaChart = echarts.init(gammaChartEl);
+                gammaChart.setOption({
+                    title: { text: 'EOTF 曲线', left: 'center', top: 5 },
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: ['实测', '目标'], top: 25 },
+                    grid: { top: 60, bottom: 30, left: 50, right: 20 },
+                    xAxis: { 
+                        type: 'value',
+                        name: '输入',
+                        min: 0, max: 1
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '亮度',
+                        min: 0, max: 1
+                    },
+                    series: [
+                        {
+                            name: '实测',
+                            type: 'line',
+                            data: reportData.gammaChart.input.map((x, i) => [x, reportData.gammaChart.measured[i]]),
+                            smooth: true,
+                            lineStyle: { color: '#007bff', width: 2 }
+                        },
+                        {
+                            name: '目标',
+                            type: 'line',
+                            data: reportData.gammaChart.input.map((x, i) => [x, reportData.gammaChart.target[i]]),
+                            smooth: true,
+                            lineStyle: { color: '#28a745', type: 'dashed', width: 2 }
+                        }
+                    ]
+                });
+            }
+            
+            // 色域三角形图
+            const gamutChartEl = document.getElementById('gamut-chart');
+            if (gamutChartEl && reportData.gamutChart.measured.length > 0) {
+                const gamutChart = echarts.init(gamutChartEl);
+                gamutChart.setOption({
+                    title: { text: '色域三角形', left: 'center', top: 5 },
+                    tooltip: { trigger: 'item' },
+                    grid: { top: 40, bottom: 30, left: 50, right: 20 },
+                    xAxis: { 
+                        type: 'value',
+                        name: 'x',
+                        min: 0, max: 0.8
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: 'y',
+                        min: 0, max: 0.9
+                    },
+                    series: [
+                        {
+                            name: '测量色域',
+                            type: 'line',
+                            data: reportData.gamutChart.measured.map(p => [p.x, p.y]),
+                            lineStyle: { color: '#007bff', width: 2 },
+                            areaStyle: { color: 'rgba(0, 123, 255, 0.2)' }
+                        },
+                        {
+                            name: '标准色域',
+                            type: 'line',
+                            data: reportData.gamutChart.standard.map(p => [p.x, p.y]),
+                            lineStyle: { color: '#28a745', width: 2, type: 'dashed' },
+                            areaStyle: { color: 'rgba(40, 167, 69, 0.1)' }
+                        },
+                        {
+                            name: '测量白点',
+                            type: 'scatter',
+                            data: [[reportData.gamutChart.white_point.x, reportData.gamutChart.white_point.y]],
+                            symbolSize: 12,
+                            itemStyle: { color: '#dc3545' }
+                        },
+                        {
+                            name: '目标白点',
+                            type: 'scatter',
+                            data: [[reportData.gamutChart.target_white_point.x, reportData.gamutChart.target_white_point.y]],
+                            symbolSize: 12,
+                            itemStyle: { color: '#ffc107' }
+                        }
+                    ]
+                });
+            }
+            
+            // Delta E 分布图
+            const deltaEChartEl = document.getElementById('delta-e-chart');
+            if (deltaEChartEl) {
+                const deltaEChart = echarts.init(deltaEChartEl);
+                const distKeys = Object.keys(reportData.deltaEChart.distribution);
+                const distValues = Object.values(reportData.deltaEChart.distribution);
+                const colors = ['#28a745', '#5cb85c', '#ffc107', '#fd7e14', '#dc3545'];
+                
+                deltaEChart.setOption({
+                    title: { text: 'Delta E 分布', left: 'center', top: 5 },
+                    tooltip: { trigger: 'axis' },
+                    grid: { top: 40, bottom: 30, left: 50, right: 20 },
+                    xAxis: {
+                        type: 'category',
+                        data: distKeys
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '数量'
+                    },
+                    series: [{
+                        name: '数量',
+                        type: 'bar',
+                        data: distValues.map((v, i) => ({
+                            value: v,
+                            itemStyle: { color: colors[i % colors.length] }
+                        }))
+                    }]
+                });
+            }
+            
+            // 窗口大小变化时重新调整图表
+            window.addEventListener('resize', function() {
+                echarts.getInstanceByDom(document.getElementById('gamma-chart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('gamut-chart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('delta-e-chart'))?.resize();
+            });
+        }
+    </script>
+</body>
+</html>

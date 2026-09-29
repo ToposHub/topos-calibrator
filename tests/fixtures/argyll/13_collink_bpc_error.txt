@@ -1,0 +1,39 @@
+# Fixture: collink BPC 参数错误（感知意图冲突）
+# 来源: 手写，基于 ArgyllCMS collink 感知意图+BPC 错误输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: collink -v -i709 -r display.icc -np -b -G33 -O output.cube
+# 错误原因: 感知意图 (-np) 与 BPC (-b) 不兼容
+
+# ========== 启动阶段 ==========
+ArgyllCMS collink - Device link profile creator
+Version 2.2.1
+
+Source space: Rec.709 (sRGB-like)
+Target profile: 'display.icc'
+Rendering intent: Perceptual
+Black point compensation: Enabled
+
+# ========== 错误输出 ==========
+# ArgyllCMS 感知意图已包含黑场映射，叠加 BPC 会报错
+
+Error: Black point compensation (-b) cannot be used with perceptual intent (-np)
+Perceptual intent already includes black point mapping
+
+collink: Fatal error - incompatible parameter combination
+
+# 返回码: 1
+
+# ========== 预期解析结果 ==========
+# 这是 argyll_controller.py 已修复的参数互斥问题
+# make_3dlut() 方法会自动禁用 BPC 当 intent='p'
+
+# 错误检测:
+# - "Black point compensation (-b) cannot be used" -> 参数冲突
+# - "incompatible parameter combination" -> 参数不兼容
+
+# ========== 修复说明 ==========
+# argyll_controller.py make_3dlut() 方法:
+# - intent='r' (相对色度): 可以启用 BPC
+# - intent='p' (感知): 强制禁用 BPC，避免此错误
+# - intent='a' (绝对色度): 不启用 BPC
+# - intent='s' (饱和): 不启用 BPC

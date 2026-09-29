@@ -1,0 +1,43 @@
+# Fixture: spotread 校准失败
+# 来源: 手写，基于 ArgyllCMS spotread 校准失败输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: spotread -e -d l -c 1，然后发送 'c' 校准
+
+# ========== 启动阶段 ==========
+ArgyllCMS spotread - Emissive (Display) measurement utility
+Version 2.2.1
+
+Setting up instrument ...
+Found instrument 'hid:111 (i1 Display Pro, ColorMunki Display)'
+Serial Number: XXXXXXXX
+Place instrument on measurement area ...
+Hit any key to continue:
+
+# ========== 用户发送 'c' 校准命令 ==========
+# 校准需要将探头放在校准板上（白板）
+
+# ========== 校准失败 ==========
+# 可能原因:
+# 1. 校准板位置不对
+# 2. 校准板脏污
+# 3. 光线干扰
+
+Calibration failed - reflectance sample out of range
+
+# 或者:
+Calibration failed - white calibration reading out of range
+
+# ========== 预期解析结果 ==========
+# 错误关键词检测:
+# - "Calibration failed" -> 校准失败
+# - "out of range" -> 读数超出范围
+# - 应触发 SPOTREAD_ERROR_KEYWORDS 匹配
+
+# ========== 用户提示建议 ==========
+# ERROR_MESSAGE_MAP['calibration failed'] =
+#   '校准失败，请重新校准探头'
+
+# ========== 关键检测点 ==========
+# - 这是校准阶段错误
+# - 需要用户重新校准
+# - 可以继续测量流程（发送新校准命令）

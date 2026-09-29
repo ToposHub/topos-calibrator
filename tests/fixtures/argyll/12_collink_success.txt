@@ -1,0 +1,48 @@
+# Fixture: collink 生成 3D LUT 成功
+# 来源: 手写，基于 ArgyllCMS collink 成功输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: collink -v -i709 -r display.icc -nr -b -G33 -O output.cube
+
+# ========== 启动阶段 ==========
+ArgyllCMS collink - Device link profile creator
+Version 2.2.1
+
+Source space: Rec.709 (sRGB-like)
+Target profile: 'display.icc'
+Rendering intent: Relative Colorimetric
+Black point compensation: Enabled
+
+# ========== 计算阶段 ==========
+# collink 计算 3D LUT 网格点
+
+Making lookup tables - 0% done
+Making lookup tables - 10% done
+Making lookup tables - 20% done
+...
+Making lookup tables - 50% done
+...
+Making lookup tables - 90% done
+Making lookup tables - 100% done
+
+# ========== 输出阶段 ==========
+Creating 3D LUT (33x33x33 cube) ...
+Writing GPU LUT to 'output.cube' ...
+
+# ========== 完成输出 ==========
+Created 3D LUT file 'output.cube'
+Total grid points: 35937 (33^3)
+LUT format: Adobe CUBE
+
+# ========== 预期解析结果 ==========
+# 进度检测正则:
+# - r'Making lookup tables - (\d+)% done'
+# 提取: progress_pct = match.group(1)
+
+# 成功检测:
+# - "Created 3D LUT file" + ".cube" -> 文件已生成
+# - 返回码 = 0
+# - 文件存在: output.cube
+
+# CUBE 文件格式验证:
+# - 文件头部: TITLE, _LUT_3D_SIZE 等标签
+# - 数据行数 = size^3 = 33^3 = 35937

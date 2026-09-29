@@ -1,0 +1,53 @@
+# Fixture: targen 生成测试色块输出
+# 来源: 手写，基于 ArgyllCMS targen 输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: targen -v -d3 -f1024 output
+
+# ========== 启动阶段 ==========
+ArgyllCMS targen - Test chart generator
+Version 2.2.1
+
+Device type: Emissive display (d3)
+Total patches requested: 1024
+
+# ========== 色块生成过程 ==========
+# targen 使用自适应优化算法生成色块分布
+
+Generating test chart ...
+Created 128 patches (gray axis + primaries)
+Created 256 patches (extended gamut)
+Created 512 patches (adaptive sampling)
+Created 1024 patches (final optimized set)
+
+# ========== 输出文件信息 ==========
+Output file: output.ti1
+Number of fields: 5
+Field names: SAMPLE_ID RGB_R RGB_G RGB_B RGB_XYZ
+
+# ========== ti1 文件预览 ==========
+# targen 会在输出中显示 ti1 文件的摘要
+
+NUMBER_OF_SETS 1024
+BEGIN_DATA_FORMAT
+SAMPLE_ID RGB_R RGB_G RGB_B
+END_DATA_FORMAT
+BEGIN_DATA
+1 A1 0.00000 0.00000 0.00000  # 黑场
+2 A2 1.00000 1.00000 1.00000  # 白场
+...
+1024 A1024 0.51234 0.34567 0.67890
+END_DATA
+
+# ========== 预期解析结果 ==========
+# 进度检测:
+# - "Created X patches" -> 生成进度
+# 正则: r'Created\s+(\d+)\s+patches'
+
+# 成功检测:
+# - "Output file:" + ".ti1" -> 文件已生成
+# - 返回码 = 0
+# - 文件存在: output.ti1
+
+# ti1 解析:
+# - NUMBER_OF_SETS 行 -> 色块总数
+# 正则: r'NUMBER_OF_SETS\s+(\d+)'

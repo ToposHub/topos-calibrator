@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topos Calibrator - 数据对比</title>
+
+    <!-- qwebchannel.js - PyQt QWebChannel 通信 -->
+    <script src="qrc:/qtwebchannel/qwebchannel.js"></script>
+
+    <!-- ECharts 图表库 -->
+    <script src="js/echarts.min.js"></script>
+
+    <!-- 样式 -->
+    <link rel="stylesheet" href="css/comparison.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题栏 -->
+        <header class="header">
+            <h1 class="header-title">历史数据对比</h1>
+            <!-- 标签页切换栏移到标题中间 -->
+            <div class="header-tabs">
+                <button class="tab-btn active" data-tab="overview">概览</button>
+                <button class="tab-btn" data-tab="detail">详细色块</button>
+                <button class="tab-btn" data-tab="trend">历史趋势</button>
+            </div>
+            <!-- 导出按钮 -->
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="btn-export" title="导出报告为 HTML 文件">
+                    <span class="icon">📄</span> 导出
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 左侧：数据选择面板 -->
+            <aside class="selection-panel">
+                <div class="panel-header">
+                    <h2>选择数据</h2>
+                    <div class="selection-controls">
+                        <button class="btn-small" id="btn-select-all">全选</button>
+                        <button class="btn-small" id="btn-clear-all">清空</button>
+                        <button class="btn-small" id="btn-refresh" title="刷新数据列表">↻ 刷新</button>
+                    </div>
+                </div>
+
+                <!-- 搜索筛选 -->
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索...">
+                </div>
+
+                <!-- P6-C: 分组类型选择器 -->
+                <div class="group-type-selector">
+                    <span class="selector-label">分组方式:</span>
+                    <button class="group-type-btn active" data-group-type="display" title="按显示器分组">显示器</button>
+                    <button class="group-type-btn" data-group-type="target" title="按目标标准分组">目标标准</button>
+                    <button class="group-type-btn" data-group-type="workflow" title="按工作流分组">工作流</button>
+                    <button class="group-type-btn" data-group-type="date" title="按日期分组">日期</button>
+                </div>
+
+                <!-- 测量数据列表 -->
+                <div class="measurement-list" id="measurement-list">
+                    <div class="loading-placeholder" id="loading-placeholder">
+                        <span class="loading-icon">⏳</span>
+                        <span>加载中...</span>
+                    </div>
+                </div>
+
+                <!-- 已选择计数 -->
+                <div class="selection-count" id="selection-count">
+                    已选 <span id="selected-count">0</span> 条
+                </div>
+            </aside>
+
+            <!-- 右侧：对比结果区域 -->
+            <section class="comparison-area" id="comparison-area">
+                <!-- 空状态提示 -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">📈</div>
+                    <h3>请选择数据进行查看</h3>
+                    <p>选择历史数据后点击"对比"</p>
+                </div>
+
+                <!-- 概览标签页 -->
+                <div class="tab-content active" id="tab-overview">
+                    <!-- 图表区域 -->
+                    <div class="charts-container" id="charts-container">
+                        <!-- CIE 1931 色域对比图 -->
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>CIE 1931 色域</h3>
+                                <div class="preset-selector">
+                                    <button class="preset-toggle-btn" id="gamut-preset-toggle" title="选择参考色域">
+                                        <span class="preset-toggle-icon">▼</span>
+                                        <span class="preset-toggle-text">参考色域</span>
+                                    </button>
+                                    <!-- 色域预设选择面板 -->
+                                    <div class="preset-panel" id="gamut-preset-panel">
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">基础色域</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="sRGB" checked>
+                                                    <span class="preset-color-dot" style="background: #00ff00"></span>
+                                                    <span class="preset-name">sRGB</span>
+                                                    <span class="preset-desc">IEC 61966-2-1</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="Rec709">
+                                                    <span class="preset-color-dot" style="background: #00ff88"></span>
+                                                    <span class="preset-name">Rec.709</span>
+                                                    <span class="preset-desc">HD视频标准</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">宽色域</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="DCI_P3">
+                                                    <span class="preset-color-dot" style="background: #ff6b6b"></span>
+                                                    <span class="preset-name">DCI-P3</span>
+                                                    <span class="preset-desc">数字影院</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="DisplayP3">
+                                                    <span class="preset-color-dot" style="background: #ff8888"></span>
+                                                    <span class="preset-name">Display P3</span>
+                                                    <span class="preset-desc">Apple D65</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="AdobeRGB">
+                                                    <span class="preset-color-dot" style="background: #4ecdc4"></span>
+                                                    <span class="preset-name">Adobe RGB</span>
+                                                    <span class="preset-desc">1998</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="Rec2020">
+                                                    <span class="preset-color-dot" style="background: #ffe66d"></span>
+                                                    <span class="preset-name">Rec.2020</span>
+                                                    <span class="preset-desc">UHD/4K/8K</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">专业电影</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="ProPhotoRGB">
+                                                    <span class="preset-color-dot" style="background: #9b59b6"></span>
+                                                    <span class="preset-name">ProPhoto RGB</span>
+                                                    <span class="preset-desc">摄影宽色域</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="ACES_AP0">
+                                                    <span class="preset-color-dot" style="background: #f39c12"></span>
+                                                    <span class="preset-name">ACES AP0</span>
+                                                    <span class="preset-desc">Academic</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="ACES_AP1">
+                                                    <span class="preset-color-dot" style="background: #f1c40f"></span>
+                                                    <span class="preset-name">ACES AP1</span>
+                                                    <span class="preset-desc">ACEScg</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">品牌色域</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="S_Gamut3">
+                                                    <span class="preset-color-dot" style="background: #3498db"></span>
+                                                    <span class="preset-name">S-Gamut3</span>
+                                                    <span class="preset-desc">Sony</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="V_Gamut">
+                                                    <span class="preset-color-dot" style="background: #1abc9c"></span>
+                                                    <span class="preset-name">V-Gamut</span>
+                                                    <span class="preset-desc">Panasonic</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="C_Gamut">
+                                                    <span class="preset-color-dot" style="background: #16a085"></span>
+                                                    <span class="preset-name">C-Gamut</span>
+                                                    <span class="preset-desc">Canon</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamut-preset" value="REDWideGamutRGB">
+                                                    <span class="preset-color-dot" style="background: #c0392b"></span>
+                                                    <span class="preset-name">RED WideGamut</span>
+                                                    <span class="preset-desc">RED</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chart-legend" id="cie-legend"></div>
+                            </div>
+                            <div class="chart-body">
+                                <div id="cie-chart" class="chart"></div>
+                            </div>
+                        </div>
+
+                        <!-- Gamma 曲线对比图 -->
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>Gamma 曲线</h3>
+                                <div class="preset-selector">
+                                    <button class="preset-toggle-btn" id="gamma-preset-toggle" title="选择参考曲线">
+                                        <span class="preset-toggle-icon">▼</span>
+                                        <span class="preset-toggle-text">参考曲线</span>
+                                    </button>
+                                    <!-- Gamma预设选择面板 -->
+                                    <div class="preset-panel" id="gamma-preset-panel">
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">标准Gamma</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="1.8">
+                                                    <span class="preset-color-dot" style="background: #0abde3"></span>
+                                                    <span class="preset-name">Gamma 1.8</span>
+                                                    <span class="preset-desc">Mac传统</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="2.2" checked>
+                                                    <span class="preset-color-dot" style="background: #8888a0"></span>
+                                                    <span class="preset-name">Gamma 2.2</span>
+                                                    <span class="preset-desc">sRGB标准</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="2.4">
+                                                    <span class="preset-color-dot" style="background: #ff9f43"></span>
+                                                    <span class="preset-name">Gamma 2.4</span>
+                                                    <span class="preset-desc">BT.1886</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="2.6">
+                                                    <span class="preset-color-dot" style="background: #ee5a24"></span>
+                                                    <span class="preset-name">Gamma 2.6</span>
+                                                    <span class="preset-desc">DCI影院</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">复合曲线</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="sRGB">
+                                                    <span class="preset-color-dot" style="background: #10b981"></span>
+                                                    <span class="preset-name">sRGB曲线</span>
+                                                    <span class="preset-desc">IEC标准</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="Rec709">
+                                                    <span class="preset-color-dot" style="background: #6c5ce7"></span>
+                                                    <span class="preset-name">Rec.709</span>
+                                                    <span class="preset-desc">BT.709</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="BT1886">
+                                                    <span class="preset-color-dot" style="background: #fdcb6e"></span>
+                                                    <span class="preset-name">BT.1886</span>
+                                                    <span class="preset-desc">黑场补偿</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">HDR曲线</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="PQ">
+                                                    <span class="preset-color-dot" style="background: #e17055"></span>
+                                                    <span class="preset-name">ST 2084 PQ</span>
+                                                    <span class="preset-desc">HDR10</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="HLG">
+                                                    <span class="preset-color-dot" style="background: #00b894"></span>
+                                                    <span class="preset-name">HLG</span>
+                                                    <span class="preset-desc">BBC/NHK</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">Log曲线</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="LogC">
+                                                    <span class="preset-color-dot" style="background: #74b9ff"></span>
+                                                    <span class="preset-name">ARRI Log C</span>
+                                                    <span class="preset-desc">Alexa</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="SLog3">
+                                                    <span class="preset-color-dot" style="background: #0984e3"></span>
+                                                    <span class="preset-name">S-Log3</span>
+                                                    <span class="preset-desc">Sony</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="VLog">
+                                                    <span class="preset-color-dot" style="background: #81ecec"></span>
+                                                    <span class="preset-name">V-Log</span>
+                                                    <span class="preset-desc">Panasonic</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="CLog">
+                                                    <span class="preset-color-dot" style="background: #55a3ff"></span>
+                                                    <span class="preset-name">C-Log</span>
+                                                    <span class="preset-desc">Canon</span>
+                                                </label>
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="ACEScct">
+                                                    <span class="preset-color-dot" style="background: #a29bfe"></span>
+                                                    <span class="preset-name">ACEScct</span>
+                                                    <span class="preset-desc">ACES Log</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="preset-category">
+                                            <div class="preset-category-title">线性</div>
+                                            <div class="preset-items">
+                                                <label class="preset-item">
+                                                    <input type="checkbox" name="gamma-preset" value="Linear">
+                                                    <span class="preset-color-dot" style="background: #ffeaa7"></span>
+                                                    <span class="preset-name">Linear</span>
+                                                    <span class="preset-desc">Gamma 1.0</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chart-legend" id="gamma-legend"></div>
+                            </div>
+                            <div class="chart-body">
+                                <div id="gamma-chart" class="chart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总表格区域 -->
+                    <div class="table-container" id="table-container">
+                        <div class="table-header">
+                            <h3>关键参数汇总</h3>
+                            <p class="table-hint">绿色为最佳值</p>
+                        </div>
+                        <table class="comparison-table" id="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-color">色</th>
+                                    <th class="col-name">名称</th>
+                                    <th class="col-peak">峰值</th>
+                                    <th class="col-black">黑场</th>
+                                    <th class="col-contrast">对比度</th>
+                                    <th class="col-cct">CCT</th>
+                                    <th class="col-gamma">Gamma</th>
+                                    <th class="col-srgb">sRGB</th>
+                                    <th class="col-p3">P3</th>
+                                    <th class="col-adobe">Adobe</th>
+                                    <th class="col-2020">2020</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 详细色块标签页 -->
+                <div class="tab-content" id="tab-detail">
+                    <div class="detail-table-container">
+                        <div class="table-header">
+                            <h3>色块测量详情</h3>
+                            <p class="table-hint">包含 RGB、xyY、CCT、Delta E 等详细参数</p>
+                        </div>
+                        <div class="detail-table-wrapper">
+                            <table class="detail-table" id="detail-table">
+                                <thead id="detail-table-head">
+                                    <!-- 动态生成表头 -->
+                                </thead>
+                                <tbody id="detail-table-body">
+                                    <!-- 动态生成内容 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史趋势标签页（定期复检场景：同一显示器/目标的指标随时间变化） -->
+                <div class="tab-content" id="tab-trend">
+                    <div class="detail-table-container">
+                        <div class="table-header" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h3>历史趋势</h3>
+                            <select id="trend-group-select" title="选择要追踪的分组（显示器/目标/工作流）">
+                                <option value="">-- 选择分组 --</option>
+                            </select>
+                            <select id="trend-metric-select" title="趋势指标">
+                                <option value="whiteY" selected>白点亮度 (cd/m²)</option>
+                                <option value="whiteCCT">白点 CCT (K)</option>
+                                <option value="gamma">平均 Gamma</option>
+                                <option value="whiteDuv">白点 Δu'v' (vs D65)</option>
+                            </select>
+                            <span class="table-hint" id="trend-hint">选择分组后展示各次校准/测量的指标走势</span>
+                        </div>
+                        <div id="trend-chart" style="width:100%; min-height:420px;"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" id="context-menu-rename">
+            <span class="menu-icon">✏️</span>
+            <span>重命名</span>
+        </div>
+        <!-- P6-C: Golden Baseline 选项 -->
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" id="context-menu-mark-golden">
+            <span class="menu-icon">⭐</span>
+            <span>标记为 Golden Baseline</span>
+        </div>
+        <div class="context-menu-item" id="context-menu-compare-golden">
+            <span class="menu-icon">📊</span>
+            <span>与 Golden Baseline 对比</span>
+        </div>
+        <div class="context-menu-item" id="context-menu-unmark-golden" style="display: none;">
+            <span class="menu-icon">✕</span>
+            <span>取消 Golden Baseline</span>
+        </div>
+    </div>
+
+    <!-- 重命名对话框 -->
+    <div class="rename-overlay" id="rename-overlay"></div>
+    <div class="rename-dialog" id="rename-dialog">
+        <div class="rename-dialog-title">重命名数据</div>
+        <div class="rename-input-wrapper">
+            <input type="text" class="rename-input" id="rename-input" placeholder="输入新名称">
+            <div class="rename-hint">留空将恢复默认名称</div>
+        </div>
+        <div class="rename-dialog-buttons">
+            <button class="rename-btn rename-btn-cancel" id="rename-cancel">取消</button>
+            <button class="rename-btn rename-btn-confirm" id="rename-confirm">确定</button>
+        </div>
+    </div>
+
+    <!-- 国际化：i18n 核心需最先加载，语言包随后注册 -->
+    <script src="js/i18n.js?v=1"></script>
+    <script src="js/locales/zh-CN.js?v=1"></script>
+    <script src="js/locales/en.js?v=1"></script>
+
+    <!-- 前端逻辑 -->
+    <script src="js/comparison.js?v=1"></script>
+</body>
+</html>

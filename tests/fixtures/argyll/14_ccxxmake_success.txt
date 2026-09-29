@@ -1,0 +1,57 @@
+# Fixture: ccxxmake 生成 CCMX 校正矩阵成功
+# 来源: 手写，基于 ArgyllCMS ccxxmake 成功输出
+# 工具版本: ArgyllCMS v2.2.x / v3.x
+# 命令: ccxxmake -v -t l -y l -z l -Y n -f ref.ti3,target.ti3 output.ccmx
+
+# ========== 启动阶段 ==========
+ArgyllCMS ccxxmake - Correction matrix creator
+Version 2.2.1
+
+Target display type: LCD (l)
+Reference instrument mode: LCD
+Target instrument mode: LCD
+Refresh mode: Non-refresh (LCD/OLED)
+
+# ========== 输入文件处理 ==========
+Reference (spectro) TI3: ref.ti3
+Target (colorimeter) TI3: target.ti3
+
+Reading reference measurements ...
+Loaded 100 patches from ref.ti3
+
+Reading target measurements ...
+Loaded 100 patches from target.ti3
+
+# ========== 矩阵计算 ==========
+Computing correction matrix ...
+Matrix type: CCMX (Matrix)
+
+# ========== 交互确认 ==========
+# ccxxmake 会询问是否清除缓存
+# argyll_controller.py 使用延迟注入 'y' 线程自动回答
+
+Clear existing matrix cache? (y/n)
+
+# ========== 完成输出 ==========
+Created correction matrix 'output.ccmx'
+
+Matrix values:
+X = 0.9876 * R + 0.0234 * G + -0.0110 * B
+Y = 0.0012 * R + 1.0123 * G + -0.0135 * B
+Z = -0.0056 * R + 0.0089 * G + 1.0067 * B
+
+Matrix accuracy: RMS error = 0.0034 DeltaE
+
+# ========== 预期解析结果 ==========
+# 成功检测:
+# - "Created correction matrix" + ".ccmx" -> 文件已生成
+# - 返回码 = 0
+# - 文件存在: output.ccmx
+
+# CCMX 文件解析:
+# - MATRIX_XYZ_XYZ 行 -> 矩阵系数
+# - MATRIX_ESUM 行 -> 误差摘要
+
+# ========== argyll_controller.py 特殊处理 ==========
+# ccxxmake 有交互式"清空缓存"提示，需要延迟注入 'y'
+# make_ccmx() 方法使用 threading.Thread 自动应答
