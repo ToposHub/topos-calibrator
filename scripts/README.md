@@ -7,6 +7,7 @@
 ```
 scripts/
 ├── build_all.py           # 跨平台打包构建脚本
+├── prepare_argyll_bundle.py # 收集 ArgyllCMS 许可证和对应源代码
 ├── macos_sign.py          # macOS 代码签名脚本
 ├── macos_notarize.py      # macOS 公证脚本
 ├── linux_appimage.py      # Linux AppImage 创建脚本
@@ -19,7 +20,7 @@ scripts/
 ### build_all.py - 跨平台打包
 
 ```bash
-# 当前平台打包
+# 当前平台打包（不携带项目内 ArgyllCMS 时可直接运行）
 python scripts/build_all.py
 
 # 指定平台
@@ -30,7 +31,32 @@ python scripts/build_all.py --clean
 
 # macOS 签名和公证
 python scripts/build_all.py --platform macos --sign --notarize
+
+# 携带 ArgyllCMS 的合规可分发构建
+python scripts/build_all.py --platform macos --clean \
+  --argyll-source /path/to/Argyll_V3.5.0_source.zip
+python scripts/build_all.py --platform windows --clean \
+  --argyll-source C:\path\to\Argyll_V3.5.0_source.zip
 ```
+
+当项目根目录存在 `ArgyllCMS/` 时，`build_all.py` 会要求提供与二进制版本匹配的
+官方源代码压缩包，并自动写入许可证清单、源代码 SHA-256 和第三方声明。不会把
+第三方二进制提交到 Git。
+
+### prepare_argyll_bundle.py - ArgyllCMS 合规元数据
+
+如果只想先准备并检查 ArgyllCMS 目录，可以运行：
+
+```bash
+python scripts/prepare_argyll_bundle.py \
+  --argyll-dir ./ArgyllCMS \
+  --platform macos \
+  --source-archive /path/to/Argyll_V3.5.0_source.zip \
+  --require-source
+```
+
+脚本不会修改 ArgyllCMS 可执行文件，只会添加 `licenses/`、`source/`、
+`BUILD_METADATA.txt` 和第三方声明文件。
 
 环境变量（macOS 签名/公证）：
 - `CODESIGN_IDENTITY`: Developer ID Application 证书

@@ -22,6 +22,27 @@ windows_icon = project_root / 'packaging' / 'windows' / 'ToposCalibrator.ico'
 # ========== 分析配置 ==========
 block_cipher = None
 
+# ArgyllCMS is an optional, user-supplied third-party runtime.  The build
+# remains usable without it (the application can guide users to install it),
+# but when ./ArgyllCMS exists it is copied as a separate data directory.
+argyll_dir = project_root / 'ArgyllCMS'
+
+datas = [
+    # Web 前端文件
+    (str(project_root / 'web'), 'web'),
+    # 项目资源
+    (str(project_root / 'resources'), 'resources'),
+    # 应用许可证和第三方说明
+    (str(project_root / 'LICENSE'), 'licenses'),
+    (str(project_root / 'packaging' / 'argyll' / 'THIRD_PARTY_NOTICES.md'), 'licenses'),
+    # 文档文件
+    (str(project_root / 'README.md'), '.'),
+    # 修正文件（如果存在）
+    (str(project_root / 'corrections'), 'corrections'),
+]
+if argyll_dir.is_dir():
+    datas.append((str(argyll_dir), 'ArgyllCMS'))
+
 a = Analysis(
     # 主入口文件
     ['main.py'],
@@ -32,20 +53,8 @@ a = Analysis(
     # 二进制数据
     binaries=[],
     
-    # 数据文件 - Web 前端和资源
-    datas=[
-        # Web 前端文件
-        ('web', 'web'),
-        # 资源文件
-        ('resources', 'resources'),
-        # ArgyllCMS 工具（如果存在）
-        # 注意：ArgyllCMS 目录是可选的，打包时可能为空
-        ('ArgyllCMS', 'ArgyllCMS'),
-        # 文档文件
-        ('README.md', '.'),
-        # 修正文件（如果存在）
-        ('corrections', 'corrections'),
-    ],
+    # 数据文件 - Web 前端、资源、许可证和可选 ArgyllCMS 目录
+    datas=datas,
     
     # Hidden imports - PyQt6 和项目模块
     hiddenimports=[

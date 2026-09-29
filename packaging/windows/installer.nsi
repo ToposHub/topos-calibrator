@@ -16,7 +16,7 @@
 ; ========== 应用信息 ==========
 !define APP_NAME "Topos Calibrator"
 !define APP_VERSION "0.1.0-preview"
-!define APP Publisher "Topos Calibrator Team"
+!define APP_PUBLISHER "Topos Calibrator Team"
 !define APP_URL "https://toposcalibrator.com"
 !define APP_GUID "com.toposcalibrator.app"
 
@@ -28,9 +28,6 @@
 ; ========== UI 设置 ==========
 !define MUI_ICON "packaging\windows\ToposCalibrator.ico"
 !define MUI_UNICON "packaging\windows\ToposCalibrator.ico"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "packaging\windows\installer-banner.bmp"
-!define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP "packaging\windows\installer-header.bmp"
 !define MUI_ABORTWARNING
 
 ; ========== 输出文件 ==========
@@ -76,7 +73,7 @@ Section "!${APP_NAME} (必需)" SecMain
     ; 注册安装信息
     WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "DisplayName" "${APP_NAME}"
     WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
-    WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "Publisher" "${APP_Publisher}"
+    WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "Publisher" "${APP_PUBLISHER}"
     WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "UninstallString" "$INSTDIR\Uninstall.exe"
     WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
     WriteRegStr ${REG_ROOT} "${UNINSTALL_KEY}" "URLInfoAbout" "${APP_URL}"
@@ -97,18 +94,6 @@ Section "!${APP_NAME} (必需)" SecMain
     CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\Topos Calibrator.exe"
 SectionEnd
 
-Section "ArgyllCMS 工具" SecArgyllCMS
-    SetOutPath "$INSTDIR\ArgyllCMS\bin"
-    
-    ; 检查是否包含 ArgyllCMS
-    IfFileExists "dist\Topos Calibrator\ArgyllCMS\bin\spotread.exe" +4 0
-    MessageBox MB_OK "注意: 安装包中未包含 ArgyllCMS。$\n$\n请手动下载 ArgyllCMS 并将 bin 目录复制到:$\n$INSTDIR\ArgyllCMS\bin$\n$\n下载地址: https://www.argyllcms.com/"
-    Return
-    
-    ; 复制 ArgyllCMS 文件
-    File /r "dist\Topos Calibrator\ArgyllCMS\bin\*"
-SectionEnd
-
 Section "修正文件 (CCSS/CCMX)" SecCorrections
     SetOutPath "$INSTDIR\corrections"
     
@@ -121,16 +106,17 @@ SectionEnd
 Section "文档和示例" SecDocs
     SetOutPath "$INSTDIR\docs"
     File /r "docs\*"
-    
-    SetOutPath "$INSTDIR\measurements\examples"
-    File /r "measurements\examples\*"
+
+    ; 示例数据是可选目录，存在时才复制，避免空项目无法编译安装器。
+    !ifexist "measurements\examples"
+        SetOutPath "$INSTDIR\measurements\examples"
+        File /r "measurements\examples\*"
+    !endif
 SectionEnd
 
 ; ========== 组件描述 ==========
 LangString DESC_SecMain ${LANG_ENGLISH} "Topos Calibrator 主程序 (必需)"
 LangString DESC_SecMain ${LANG_SIMPCHINESE} "Topos Calibrator 主程序 (必需)"
-LangString DESC_SecArgyllCMS ${LANG_ENGLISH} "ArgyllCMS measurement tools (Recommended)"
-LangString DESC_SecArgyllCMS ${LANG_SIMPCHINESE} "ArgyllCMS 测量工具 (推荐)"
 LangString DESC_SecCorrections ${LANG_ENGLISH} "Colorimeter correction files (CCSS/CCMX)"
 LangString DESC_SecCorrections ${LANG_SIMPCHINESE} "色度计修正文件 (CCSS/CCMX)"
 LangString DESC_SecDocs ${LANG_ENGLISH} "Documentation and example measurements"
@@ -138,7 +124,6 @@ LangString DESC_SecDocs ${LANG_SIMPCHINESE} "文档和示例测量数据"
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SecMain} $(DESC_SecMain)
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecArgyllCMS} $(DESC_SecArgyllCMS)
     !insertmacro MUI_DESCRIPTION_TEXT ${SecCorrections} $(DESC_SecCorrections)
     !insertmacro MUI_DESCRIPTION_TEXT ${SecDocs} $(DESC_SecDocs)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END

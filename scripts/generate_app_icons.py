@@ -89,6 +89,10 @@ def main() -> None:
         raise SystemExit(f"Icon source not found: {SOURCE}")
 
     with Image.open(SOURCE) as image:
+        if "A" not in image.mode:
+            raise SystemExit(
+                "Icon source must include an alpha channel (RGBA/LA) for transparent packaging"
+            )
         source = image.convert("RGBA")
         if source.width != 1024 or source.height != 1024:
             raise SystemExit(

@@ -18,6 +18,8 @@
 packaging/
 ├── README.md                   # 本文档
 ├── pyinstaller.spec            # PyInstaller 配置文件
+├── argyll/                     # ArgyllCMS 合规说明模板（不含第三方二进制）
+│   └── THIRD_PARTY_NOTICES.md  # 随应用分发的第三方声明
 ├── macos/                      # macOS 打包配置
 │   ├── Info.plist              # app bundle 元数据
 │   ├── entitlements.plist      # 权限声明（USB、辅助功能）
@@ -50,7 +52,58 @@ Windows `.ico`，以及供 AppImage 使用的 Linux PNG。PyInstaller、NSIS 和
 运行时 Qt 均已指向这些资源；Windows manifest 与 macOS `Info.plist` 保留
 高 DPI 配置。
 
+生成后的 `packaging/macos/ToposCalibrator.icns`、
+`packaging/windows/ToposCalibrator.ico` 和 `packaging/linux/ToposCalibrator.png`
+已经直接放入仓库，用户可以直接运行打包命令，不需要额外安装图标转换工具。
+只有在替换源 PNG 后，才需要重新运行上面的生成脚本。
+
 ## ArgyllCMS 策略
+
+ArgyllCMS 不是本仓库的源代码，也不会被提交到 Git。打包时它作为独立的
+命令行程序目录随应用分发；应用通过子进程调用这些工具。ArgyllCMS 的主要
+代码和可执行文件采用 AGPL-3.0，发行包还包含 GPL、LGPL、MIT/BSD、ISC 等
+其他组件许可证。因此不能只放一个简短的“使用了 ArgyllCMS”说明。
+
+### 准备可分发的 ArgyllCMS 目录
+
+1. 从 [ArgyllCMS 官网](https://www.argyllcms.com/) 下载目标平台的官方二进制包。
+2. 下载与二进制版本完全匹配的官方源代码压缩包。
+3. 将二进制包解压并重命名为项目根目录的 `ArgyllCMS`，确保存在
+   `ArgyllCMS/bin/spotread`（macOS）或 `ArgyllCMS/bin/spotread.exe`（Windows）。
+4. 在构建命令中通过 `--argyll-source` 传入源代码压缩包路径。
+
+例如：
+
+```bash
+python scripts/build_all.py --platform macos --clean \
+  --argyll-source /path/to/Argyll_V3.5.0_source.zip
+
+python scripts/build_all.py --platform windows --clean \
+  --argyll-source C:\path\to\Argyll_V3.5.0_source.zip
+```
+
+`build_all.py` 会自动调用 `scripts/prepare_argyll_bundle.py`，完成以下操作：
+
+- 验证 `bin/` 和 `spotread` 是否存在；
+- 从官方发行目录收集 `License.txt`、`License2.txt`、`License3.txt`、
+  `License4.txt`、GPL/LGPL/第三方版权文件；
+- 将这些文件复制到 `ArgyllCMS/licenses/official/`，并生成
+  `ARGYLLCMS_LICENSE_MANIFEST.txt`；
+- 把对应源代码压缩包复制到 `ArgyllCMS/source/`，记录 SHA-256；
+- 写入 `BUILD_METADATA.txt`、`ARGYLLCMS_SOURCE_CODE.txt` 和
+  `THIRD_PARTY_NOTICES.md`。
+
+如果 `ArgyllCMS/` 存在但没有传入匹配的源代码压缩包，构建脚本会停止，避免
+生成缺少 AGPL-3.0 对应源代码的可分发安装包。若项目根目录没有 `ArgyllCMS/`，
+则可以构建不含第三方工具的应用，用户运行时再按 README 安装 ArgyllCMS。
+
+打包产物中的合规文件位置：
+
+- macOS：`Topos Calibrator.app/Contents/Resources/ArgyllCMS/licenses/`
+- Windows：安装目录下的 `ArgyllCMS\licenses\`，以及应用的 `licenses\` 目录
+
+这些文件不能删除或替换成仅有链接的空白文件。若修改了 ArgyllCMS，必须发布
+对应修改后的源代码，并按照官方文档对修改版进行清晰标记。
 
 ### 检测策略
 
@@ -121,8 +174,9 @@ Windows `.ico`，以及供 AppImage 使用的 Linux PNG。PyInstaller、NSIS 和
 # 安装打包工具
 pip install pyinstaller
 
-# 打包
-pyinstaller packaging/pyinstaller.spec
+# 打包（若存在 ./ArgyllCMS，则必须同时提供匹配的源代码压缩包）
+python scripts/build_all.py --platform macos --clean \
+  --argyll-source /path/to/Argyll_V3.5.0_source.zip
 
 # 签名（可选，需要开发者证书）
 codesign --deep --force --verify --verbose \
@@ -145,11 +199,9 @@ xcrun notarytool submit dist/Topos\ Calibrator.zip \
 # 安装打包工具
 pip install pyinstaller
 
-# 使用 PyInstaller 打包
-pyinstaller packaging/pyinstaller.spec
-
-# 使用 NSIS 创建安装器
-makensis packaging/windows/installer.nsi
+# 使用统一脚本打包 PyInstaller 目录并创建 NSIS 安装器
+python scripts/build_all.py --platform windows --clean \
+  --argyll-source C:\path\to\Argyll_V3.5.0_source.zip
 ```
 
 ### Linux

@@ -121,6 +121,29 @@ macOS 也可以通过 Homebrew 安装：`brew install argyll-cms`；Debian/Ubunt
 项目内 `ArgyllCMS/bin` 结构放置官方发行版。`ArgyllCMS/` 已加入 `.gitignore`，请不要把
 第三方二进制文件提交到 GitHub。
 
+### 4. 将 ArgyllCMS 一起打包为 macOS/Windows 应用
+
+仓库不包含 ArgyllCMS 二进制文件。若要制作可分发的 macOS 或 Windows
+安装包，请从 [ArgyllCMS 官网](https://www.argyllcms.com/) 下载版本匹配的官方二进制压缩包
+和源代码压缩包，把二进制包解压为项目根目录下的 `./ArgyllCMS/`，并确保 `bin/` 是它的直接子目录。
+然后在目标操作系统上运行：
+
+```bash
+# macOS .app
+python scripts/build_all.py --platform macos --clean \
+  --argyll-source /path/to/Argyll_V3.5.0_source.zip
+
+# Windows 目录 + NSIS 安装程序 (.exe)
+python scripts/build_all.py --platform windows --clean \
+  --argyll-source C:\path\to\Argyll_V3.5.0_source.zip
+```
+
+构建脚本会把官方许可证复制到 `ArgyllCMS/licenses/`，记录二进制版本和 SHA-256，
+并把对应源代码压缩包一起放进应用。同时会包含 Topos Calibrator 自己的 `LICENSE`
+和 `licenses/THIRD_PARTY_NOTICES.md`。如果存在 `ArgyllCMS/` 但没有提供匹配的源代码压缩包，
+可分发构建会主动失败，以免遗漏 AGPL-3.0 的源代码和声明要求。完整流程见
+[`packaging/README.md`](packaging/README.md)。
+
 ## 使用方法
 
 ### 一键自动校准（命令行，推荐）

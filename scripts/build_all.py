@@ -5,14 +5,13 @@ Topos Calibrator 打包构建脚本
 跨平台打包入口脚本，根据当前平台选择对应的构建流程。
 
 使用方法:
-    python scripts/build.py              # 当前平台打包
-    python scripts/build.py --platform macos  # 指定平台
-    python scripts/build.py --clean      # 清理后重新打包
-    python scripts/build.py --sign       # macOS 签名和公证
+    python scripts/build_all.py              # 当前平台打包
+    python scripts/build_all.py --platform macos  # 指定平台
+    python scripts/build_all.py --clean      # 清理后重新打包
+    python scripts/build_all.py --sign       # macOS 签名和公证
 """
 
 import argparse
-import os
 import platform
 import subprocess
 import shutil
@@ -36,9 +35,35 @@ def get_current_platform():
     else:
         raise RuntimeError(f"不支持的平台: {system}")
 
+
+def prepare_argyll_for_distribution(target_platform, source_archive=None):
+    """Validate and document a user-supplied ArgyllCMS bundle before packaging."""
+    argyll_dir = PROJECT_ROOT / "ArgyllCMS"
+    if not argyll_dir.is_dir():
+        print("未找到 ./ArgyllCMS；将构建不含 ArgyllCMS 的应用，运行时可使用系统安装。")
+        return True
+
+    print("准备 ArgyllCMS 第三方许可证和对应源代码记录...")
+    command = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "prepare_argyll_bundle.py"),
+        "--argyll-dir",
+        str(argyll_dir),
+        "--platform",
+        target_platform,
+        "--require-source",
+    ]
+    if source_archive:
+        command.extend(["--source-archive", str(source_archive)])
+    result = subprocess.run(command, cwd=PROJECT_ROOT)
+    if result.returncode != 0:
+        print("ArgyllCMS 合规准备失败；未继续创建可分发安装包。")
+        return False
+    return True
+
 # ========== 构建函数 ==========
 
-def build_macos(clean=False, sign=False, notarize=False):
+def build_macos(clean=False, sign=False, notarize=False, argyll_source=None):
     """macOS 平台构建"""
     print("=" * 60)
     print("Topos Calibrator macOS Build")
@@ -49,6 +74,9 @@ def build_macos(clean=False, sign=False, notarize=False):
         print("清理构建目录...")
         shutil.rmtree(PROJECT_ROOT / "build", ignore_errors=True)
         shutil.rmtree(PROJECT_ROOT / "dist", ignore_errors=True)
+
+    if not prepare_argyll_for_distribution("macos", argyll_source):
+        return False
     
     # PyInstaller 打包
     print("执行 PyInstaller 打包...")
@@ -87,7 +115,7 @@ def build_macos(clean=False, sign=False, notarize=False):
     print("macOS 构建完成")
     return True
 
-def build_windows(clean=False):
+def build_windows(clean=False, argyll_source=None):
     """Windows 平台构建"""
     print("=" * 60)
     print("Topos Calibrator Windows Build")
@@ -98,6 +126,9 @@ def build_windows(clean=False):
         print("清理构建目录...")
         shutil.rmtree(PROJECT_ROOT / "build", ignore_errors=True)
         shutil.rmtree(PROJECT_ROOT / "dist", ignore_errors=True)
+
+    if not prepare_argyll_for_distribution("windows", argyll_source):
+        return False
     
     # PyInstaller 打包
     print("执行 PyInstaller 打包...")
@@ -133,7 +164,7 @@ def build_windows(clean=False):
     print("Windows 构建完成")
     return True
 
-def build_linux(clean=False):
+def build_linux(clean=False, argyll_source=None):
     """Linux 平台构建"""
     print("=" * 60)
     print("Topos Calibrator Linux Build")
@@ -144,6 +175,9 @@ def build_linux(clean=False):
         print("清理构建目录...")
         shutil.rmtree(PROJECT_ROOT / "build", ignore_errors=True)
         shutil.rmtree(PROJECT_ROOT / "dist", ignore_errors=True)
+
+    if not prepare_argyll_for_distribution("linux", argyll_source):
+        return False
     
     # PyInstaller 打包
     print("执行 PyInstaller 打包...")
@@ -207,6 +241,11 @@ def main():
         action="store_true",
         help="macOS: 执行公证"
     )
+    parser.add_argument(
+        "--argyll-source",
+        type=Path,
+        help="与 ./ArgyllCMS 中二进制完全匹配的官方 ArgyllCMS 源代码压缩包",
+    )
     
     args = parser.parse_args()
     
@@ -220,11 +259,16 @@ def main():
     
     # 执行构建
     if target_platform == "macos":
-        success = build_macos(clean=args.clean, sign=args.sign, notarize=args.notarize)
+        success = build_macos(
+            clean=args.clean,
+            sign=args.sign,
+            notarize=args.notarize,
+            argyll_source=args.argyll_source,
+        )
     elif target_platform == "windows":
-        success = build_windows(clean=args.clean)
+        success = build_windows(clean=args.clean, argyll_source=args.argyll_source)
     elif target_platform == "linux":
-        success = build_linux(clean=args.clean)
+        success = build_linux(clean=args.clean, argyll_source=args.argyll_source)
     else:
         print(f"不支持的平台: {target_platform}")
         sys.exit(1)

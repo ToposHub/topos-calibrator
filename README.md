@@ -124,6 +124,33 @@ and Debian/Ubuntu users can use `sudo apt install argyll`. The project-local
 machines. `ArgyllCMS/` is included in `.gitignore`; do not commit third-party
 binaries to GitHub.
 
+### 4. Build a distributable app with ArgyllCMS
+
+The repository does not contain ArgyllCMS binaries. To build a portable macOS
+or Windows package, download the matching official binary archive and the
+matching source archive from the [ArgyllCMS download page](https://www.argyllcms.com/),
+extract the binary archive as `./ArgyllCMS/`, and keep `bin/` as its direct
+child. Then run the build on the target operating system:
+
+```bash
+# macOS .app
+python scripts/build_all.py --platform macos --clean \
+  --argyll-source /path/to/Argyll_V3.5.0_source.zip
+
+# Windows directory + NSIS installer (.exe)
+python scripts/build_all.py --platform windows --clean \
+  --argyll-source C:\path\to\Argyll_V3.5.0_source.zip
+```
+
+The build helper copies the official license files into
+`ArgyllCMS/licenses/`, records the binary version and SHA-256 values, and
+includes the corresponding source archive in the package. It also includes
+Topos Calibrator's `LICENSE` and `licenses/THIRD_PARTY_NOTICES.md`. A
+distributable build fails when `ArgyllCMS/` is present but the matching source
+archive was not supplied. This keeps the AGPL-3.0 source and notice
+requirements visible to end users. See [`packaging/README.md`](packaging/README.md)
+for the complete checklist.
+
 ## Usage
 
 ### One-command automatic calibration
